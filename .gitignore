@@ -1,0 +1,81 @@
+# --- KKS ---
+.Ref
+deploy.sh
+application-secure.properties
+application-local.properties
+application-local.yml
+
+
+
+### Java ###
+*.class
+*.jar
+*.war
+*.ear
+### Gradle ###
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+gradle.properties
+### Maven ###
+.mvn/wrapper/maven-wrapper.jar
+
+### Build output ###
+out/
+target/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+src/main/resources/static/videos/
+
+### Temporary files ###
+*.swp
+*.swo
+*.tmp
+*.bak
+
+### Logs ###
+*.log
+
+### OS-specific files ###
+.DS_Store
+Thumbs.db
+
+### ETC ###
+HELP.md
+*.env
+
+
+
+### ----- IDE ----- ###
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+.idea_modules/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
