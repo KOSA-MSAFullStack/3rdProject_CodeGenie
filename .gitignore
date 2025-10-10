@@ -14,18 +14,18 @@ application-local.yml
 *.ear
 ### Gradle ###
 .gradle/
-!gradle/wrapper/gradle-wrapper.jar
-gradle.properties
+!BE/gradle/wrapper/gradle-wrapper.jar
+BE/gradle.properties
 ### Maven ###
 .mvn/wrapper/maven-wrapper.jar
 
 ### Build output ###
-out/
-target/
-build/
+BE/out/
+BE/target/
+BE/build/
 !**/src/main/**/build/
 !**/src/test/**/build/
-src/main/resources/static/videos/
+BE/src/main/resources/static/videos/
 
 ### Temporary files ###
 *.swp
@@ -45,6 +45,10 @@ HELP.md
 *.env
 
 
+### [FE] Vue ###
+
+
+
 
 ### ----- IDE ----- ###
 
@@ -56,7 +60,7 @@ HELP.md
 .settings
 .springBeans
 .sts4-cache
-bin/
+BE/bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
@@ -65,7 +69,7 @@ bin/
 *.iws
 *.iml
 *.ipr
-out/
+BE/out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 .idea_modules/
