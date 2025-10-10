@@ -10,8 +10,6 @@
  */
 package com.codegenie.submission.service;
 
-import com.codegenie.submission.entity.Submission;
-import com.codegenie.submission.repository.SubmissionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,20 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class SubmissionServiceImpl implements SubmissionService {
 
-    private final SubmissionRepository submissionRepository;
-
     @Override
-    public void submitAnswer(Long memberId, Long quizId, String answer) {
-        // 1. 제출 정보로 Submission 엔티티 생성
-        Submission submission = new Submission();
-        submission.setMemberId(memberId);
-        submission.setQuizId(quizId);
-        submission.setAnswer(answer);
-
-        // 2. DB에 제출 정보 저장
-        submissionRepository.save(submission);
-
-        // TODO: Spring AI를 이용한 비동기 채점 로직 호출 부분
-        // grade(submission);
+    public void submitAnswer(int memberId, int quizId, String answer) {
+        
     }
 }

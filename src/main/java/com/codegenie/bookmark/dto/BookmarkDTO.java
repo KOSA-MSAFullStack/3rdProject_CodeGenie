@@ -8,6 +8,7 @@
  * 주요 기능:
  * - 문제 ID, 제목 등 화면에 필요한 문제 정보 제공
  */
+
 package com.codegenie.bookmark.dto;
 
 import lombok.Getter;
@@ -16,8 +17,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class BookmarkDTO {
-    private Long quizId;
-    private String quiz; // 문제 내용
-    private String explanation; // 해설
-    private String concept; // 개념
+    private int quizId;                 // 문제_ID (PK)
+    private int workbookId;             // 문제집_ID (FK)
+    private String quiz;                // 문제 내용
+    private String explanation;         // 해설
+    private String concept;             // 개념
+    private boolean isSaved = false;    // 문제 저장 여부 (0:저장x / 1:저장o)
 }

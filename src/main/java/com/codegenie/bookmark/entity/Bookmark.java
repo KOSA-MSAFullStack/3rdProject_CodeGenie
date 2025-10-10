@@ -23,18 +23,18 @@ public class Bookmark {
     // 북마크 ID (PK)
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long bookmarkId;
-
-    // 이 북마크가 속한 그룹
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "saved_bookmark_id", nullable = false)
-    private SavedBookmark savedBookmark;
-
-    // TODO: CodingQuiz 엔티티 생성 후 @ManyToOne 관계로 수정 필요
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "quiz_id")
-    // private CodingQuiz quiz;
-    
     @Column(name = "quiz_id", nullable = false)
-    private Long quizId;
+    private int quizId;
+    
+    @Column(name = "quiz", nullable = false)
+    private String quiz;
+
+    @Column(name = "explanation", nullable = true)
+    private String explanation;
+
+    @Column(name = "concept", nullable = true)
+    private String concept;
+
+    @Column(name = "is_saved", nullable = false)
+    private boolean isSaved = false;
 }

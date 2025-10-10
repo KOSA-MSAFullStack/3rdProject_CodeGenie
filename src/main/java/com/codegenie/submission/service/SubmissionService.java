@@ -12,10 +12,10 @@ package com.codegenie.submission.service;
 public interface SubmissionService {
 
     /**
-     * 답안을 제출하고 채점을 요청
+     * 답안 제출하고 채점 요청
      * @param memberId 현재 로그인한 사용자의 ID
      * @param quizId 제출할 문제의 ID
      * @param answer 사용자가 작성한 답안 코드
      */
-    void submitAnswer(Long memberId, Long quizId, String answer);
+    void submitAnswer(int memberId, int quizId, String answer);
 }
