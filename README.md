@@ -154,9 +154,11 @@
 
 ### 3. 프로젝트 실행 (매번)
 
+0.  작업 관리자 > 서비스 > MYSQL80 > 오른쪽 클릭 (시작)
 1.  **Judge0 채점 서버 실행:**
     *   프로젝트 루트에서 `docker compose up -d`
 2.  **백엔드 서버 실행:**
+    *   `export JAVA_HOME="<JavaJDK 경로>"`
     *   `BE` 폴더에서 `./gradlew bootRun` (또는 IDE에서 실행)
 3.  **프론트엔드 서버 실행:**
     *   `FE` 폴더에서 `npm run dev`
