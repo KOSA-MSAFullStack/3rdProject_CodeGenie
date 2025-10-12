@@ -16,6 +16,12 @@ public class CustomUserDetails implements UserDetails {
         this.member = member;
     }
 
+    // 사용자 ID를 반환하는 getter 추가
+    // Submission 등 다른 서비스에서 사용자 식별이 필요할 때 사용
+    public Integer getMemberId() {
+        return member.getMember_id();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // 권한 없이도 작동하도록 빈 컬렉션 리턴
