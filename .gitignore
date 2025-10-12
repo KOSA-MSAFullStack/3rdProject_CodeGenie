@@ -4,6 +4,7 @@ deploy.sh
 application-secure.properties
 application-local.properties
 application-local.yml
+/judge0.conf
 
 
 
