@@ -50,18 +50,18 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
         );
 
-        // ✅ 커스텀 로그인 필터 (JWT 발급)
+        // 커스텀 로그인 필터 (JWT 발급)
         LoginFilter loginFilter = new LoginFilter(authenticationManager, jwtUtil);
         loginFilter.setFilterProcessesUrl("/login"); // 로그인 URL 명시
 
-        // ✅ JWT 검증 필터 (모든 요청 검증)
+        // JWT 검증 필터 (모든 요청 검증)
         JWTFilter jwtFilter = new JWTFilter(jwtUtil, userDetailsService);
 
-        // ✅ 필터 체인에 순서대로 등록
+        // 필터 체인에 순서대로 등록
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // ✅ CORS 허용 (Authorization 헤더용)
+        // CORS 허용 (Authorization 헤더용)
         http.cors(cors -> cors.configurationSource(request -> {
             var config = new org.springframework.web.cors.CorsConfiguration();
             config.setAllowedOrigins(java.util.List.of("*"));
@@ -71,7 +71,7 @@ public class SecurityConfig {
             return config;
         }));
 
-        // ✅ 세션 비활성화
+        // 세션 비활성화
         http.sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         );

@@ -37,10 +37,12 @@ public class JWTFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader("Authorization");
 
         
-     // ✅ [로그 1] 필터 실행 확인용
-        System.out.println("🟡 JWTFilter 실행됨");
+        // 필터 실행 확인용 로그
+        System.out.println("JWTFilter 실행됨");
         System.out.println("Authorization 헤더 = " + authHeader);
-        
+        System.out.println("현재 JVM 인코딩: " + System.getProperty("file.encoding"));
+
+
         
         // JWT 없으면 다음 필터로 넘김
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -58,8 +60,9 @@ public class JWTFilter extends OncePerRequestFilter {
             }
 
             
-         // ✅ [로그 2] 토큰 유효 시점
-            System.out.println("✅ JWT 유효");
+            
+            // 토큰 유효 시점 로그
+            System.out.println("JWT 유효");
             
             
             // JWT에서 이메일 추출
@@ -68,7 +71,6 @@ public class JWTFilter extends OncePerRequestFilter {
             
          // ✅ [로그 3] 추출된 이메일 출력
             System.out.println("✅ JWT 이메일 = " + email);
-
 
             // DB에서 사용자 정보 조회
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
