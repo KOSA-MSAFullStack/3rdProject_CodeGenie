@@ -84,7 +84,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         submission.setAnswer(requestDto.getAnswer());
         submission.setLanguage(requestDto.getLanguage());
         submission.setStatus(judge0Response.getStatus().getDescription());
-        submission.setTime(judge0Response.getTime());
+        submission.setRunTime(judge0Response.getTime());
         submission.setMemory(judge0Response.getMemory());
 
         // Judge0 결과에 따라 stdout 또는 stderr/compile_output 저장
@@ -108,7 +108,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .status(savedSubmission.getStatus())
                 .stdout(savedSubmission.getStdout())
                 .stderr(savedSubmission.getStderr())
-                .time(savedSubmission.getTime())
+                .runTime(savedSubmission.getRunTime())
                 .memory(savedSubmission.getMemory())
                 .submittedAt(savedSubmission.getSubmittedAt())
                 .build();

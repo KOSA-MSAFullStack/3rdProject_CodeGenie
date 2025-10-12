@@ -38,8 +38,8 @@ public class SubmissionResponseDto {
     // 표준 에러
     private String stderr;
 
-    // 실행 시간 (초)
-    private Double time;
+    // 실행 시간
+    private Double runTime;
 
     // 사용 메모리 (KB)
     private Integer memory;
