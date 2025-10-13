@@ -26,5 +26,6 @@ public class Workbook {
 
     @OneToMany(mappedBy = "workbook", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderNo ASC")
+    @Builder.Default
     private List<CodingQuiz> quizzes = new ArrayList<>();
 }
