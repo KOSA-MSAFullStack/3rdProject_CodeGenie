@@ -147,7 +147,7 @@
 ### 2. 초기 설정 (최초 1회)
 
 1.  **Judge0 설정 파일 준비:**
-    *   프로젝트 루트에서 `judge0.conf.example` 파일 `judge0.conf`로 복사.
+    *   프로젝트 루트에서 `judge0.conf.example` 파일 `judge0.conf`로 복사 (judge0.conf.example 파일 그대로 사용 x, 복사해서 이름 변경하기!)
     *   `cp judge0.conf.example judge0.conf`
 2.  **프론트엔드 의존성 설치:**
     *   `FE` 폴더 이동, `npm install` 실행.
