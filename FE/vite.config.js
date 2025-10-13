@@ -1,12 +1,18 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import path from 'path' 
+import monacoEditorPlugin from 'vite-plugin-monaco-editor'
+import path from 'path'
 
 export default defineConfig({
-  plugins: [vue()],
-   resolve: {
+  plugins: [
+    vue(),
+    monacoEditorPlugin.default({
+      languageWorkers: ['editorWorkerService', 'css', 'html', 'json', 'typescript'],
+    }),
+  ],
+  resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'), // ✅ src를 @로 인식시킴
+      '@': path.resolve(__dirname, './src'), // src를 @로 인식시킴
     },
   },
   server: {

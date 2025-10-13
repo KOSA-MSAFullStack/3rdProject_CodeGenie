@@ -4,6 +4,7 @@ deploy.sh
 application-secure.properties
 application-local.properties
 application-local.yml
+/judge0.conf
 
 
 
@@ -46,7 +47,10 @@ HELP.md
 
 
 ### [FE] Vue ###
-
+node_modules
+dist
+dist-ssr
+*.local
 
 
 
@@ -83,3 +87,13 @@ BE/out/
 
 ### VS Code ###
 .vscode/
+!.vscode/extensions.json
+
+# Visual Studio 관련
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# 추가 임시파일 패턴
+*.sw?
