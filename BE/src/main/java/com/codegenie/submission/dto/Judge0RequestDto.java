@@ -15,11 +15,9 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class Judge0RequestDto {
-    // 채점할 소스 코드
-    @JsonProperty("source_code")
+    @JsonProperty("source_code")    // 채점할 소스 코드
     private String sourceCode;
 
-    // Judge0에서 사용하는 언어 ID
-    @JsonProperty("language_id")
+    @JsonProperty("language_id")    // Judge0에서 사용하는 언어 ID
     private int languageId;
 }
