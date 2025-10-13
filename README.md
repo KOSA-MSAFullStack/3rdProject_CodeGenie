@@ -134,9 +134,8 @@
 
 ## 🚀 개발 환경 설정 및 프로젝트 실행 가이드
 
-이 프로젝트는 백엔드(Spring Boot), 프론트엔드(Vue), 그리고 채점 서버(Judge0 Docker)로 구성. 프로젝트 시작 개발자는 아래 가이드 따라 개발 환경 설정 및 실행 가능.
-
-**자세한 단계별 가이드는 `.Ref/실행 방법.txt` 파일 참조.**
+이 프로젝트는 백엔드(Spring Boot), 프론트엔드(Vue), 그리고 채점 서버(Judge0 Docker)로 구성
+프로젝트 시작 개발자는 아래 가이드 따라 개발 환경 설정 및 실행 가능
 
 ### 1. 필수 준비물
 
@@ -147,16 +146,19 @@
 ### 2. 초기 설정 (최초 1회)
 
 1.  **Judge0 설정 파일 준비:**
-    *   프로젝트 루트에서 `judge0.conf.example` 파일 `judge0.conf`로 복사 (judge0.conf.example 파일 그대로 사용 x, 복사해서 이름 변경하기!)
-    *   `cp judge0.conf.example judge0.conf`
+    *   프로젝트 루트에서 `judge0.conf.example` 파일 복사 후 `judge0.conf`로 이름 변경
+    *   (judge0.conf.example 파일 그대로 사용 x, 복사해서 이름 변경하기!)
 2.  **프론트엔드 의존성 설치:**
     *   `FE` 폴더 이동, `npm install` 실행.
 
 ### 3. 프로젝트 실행 (매번)
 
-0.  작업 관리자 > 서비스 > MYSQL80 > 오른쪽 클릭 (시작)
+각 서버 별도 터미널 창 실행 권장
+
+0.  작업 관리자 > 서비스 > MYSQL > 오른쪽 클릭 (시작)
 1.  **Judge0 채점 서버 실행:**
-    *   프로젝트 루트에서 `docker compose up -d`
+    *   도커 데스크톱 실행 후, 프로젝트 루트에서 `docker compose up -d`
+    *   (최초 실행 시 이미지 다운로드 등으로 시간 소요 가능)
 2.  **백엔드 서버 실행:**
     *   `export JAVA_HOME="<JavaJDK 경로>"`
     *   `BE` 폴더에서 `./gradlew bootRun` (또는 IDE에서 실행)
