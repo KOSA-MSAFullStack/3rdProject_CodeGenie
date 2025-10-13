@@ -1,14 +1,16 @@
 package com.codegenie.member.controller;
 
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.codegenie.member.dto.JoinDTO;
 import com.codegenie.member.service.JoinService;
 
-@Controller
-@ResponseBody
+
+@RestController
+@RequestMapping("/api") 
 public class JoinController {
     
     private final JoinService joinService;
@@ -19,7 +21,7 @@ public class JoinController {
     }
 
     @PostMapping("/join")
-    public String joinProcess(JoinDTO joinDTO) {
+    public String joinProcess(@RequestBody JoinDTO joinDTO) {
 
         System.out.println(joinDTO.getEmail());
         joinService.joinProcess(joinDTO);
