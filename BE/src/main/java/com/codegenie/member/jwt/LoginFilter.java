@@ -8,6 +8,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,30 +23,36 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     public LoginFilter(AuthenticationManager authenticationManager, JWTUtil jwtUtil) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
-        // 기본 파라미터 이름이 username → email 로 변경
-        setUsernameParameter("email");
-        setPasswordParameter("password");
+        setFilterProcessesUrl("/api/login"); // 경로 명시 (필수)
     }
 
+    // JSON 요청 파싱
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
             throws AuthenticationException {
 
-        // 클라이언트 요청에서 email, password 추출
-        String email = obtainUsername(request);
-        String password = obtainPassword(request);
+        try {
+            // 요청 바디(JSON) → LoginRequest 객체로 변환
+            ObjectMapper objectMapper = new ObjectMapper();
+            LoginRequest loginRequest = objectMapper.readValue(request.getInputStream(), LoginRequest.class);
 
-        if (email == null) email = "";
-        if (password == null) password = "";
+            String email = loginRequest.getEmail();
+            String password = loginRequest.getPassword();
 
-        email = email.trim();
+            if (email == null || password == null) {
+                throw new RuntimeException("이메일 또는 비밀번호가 비어 있습니다.");
+            }
 
-        // 이메일과 비밀번호를 담은 인증 토큰 생성
-        UsernamePasswordAuthenticationToken authToken =
-                new UsernamePasswordAuthenticationToken(email, password);
+            // AuthenticationToken 생성
+            UsernamePasswordAuthenticationToken authToken =
+                    new UsernamePasswordAuthenticationToken(email, password);
 
-        // AuthenticationManager로 인증 시도
-        return authenticationManager.authenticate(authToken);
+            // AuthenticationManager로 인증 시도
+            return authenticationManager.authenticate(authToken);
+
+        } catch (IOException e) {
+            throw new RuntimeException("로그인 요청 JSON 파싱 실패", e);
+        }
     }
 
     // 로그인 성공 시 (JWT 발급 시점)
@@ -61,7 +69,9 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
         // JWT 발급 로직
         String token = jwtUtil.createJwt(authentication.getName(), 60 * 60 * 1000L); // 1시간
 
+        // Authorization 헤더에 추가
         response.addHeader("Authorization", "Bearer " + token);
+        response.setStatus(HttpServletResponse.SC_OK);
     }
 
     // 로그인 실패 시
@@ -74,6 +84,25 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
         System.out.println("로그인 실패: " + failed.getMessage());
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    }
+    
+    //  내부 DTO 클래스 (JSON 매핑용)
+    private static class LoginRequest {
+        private String email;
+        private String password;
+
+        public String getEmail() {
+            return email;
+        }
+        public String getPassword() {
+            return password;
+        }
+        public void setEmail(String email) {
+            this.email = email;
+        }
+        public void setPassword(String password) {
+            this.password = password;
+        }
     }
 }
  
