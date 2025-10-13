@@ -12,38 +12,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
+// * author: 김기성
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true) // Judge0 응답의 모든 필드를 매핑하지 않으므로, 모르는 필드는 무시하도록 설정
 public class Judge0ResponseDto {
 
-    // 표준 출력
-    private String stdout;
+    private String stdout;          // 표준 출력
+    private String stderr;          // 표준 에러
+    private Double time;            // 실행 시간 (초)
+    private Integer memory;         // 사용 메모리 (KB)
 
-    // 표준 에러
-    private String stderr;
-
-    // 실행 시간 (초)
-    private Double time;
-
-    // 사용 메모리 (KB)
-    private Integer memory;
-
-    // 컴파일 출력 (에러 포함)
-    @JsonProperty("compile_output")
+    @JsonProperty("compile_output") // 컴파일 출력 (에러 포함)
     private String compileOutput;
 
-    // 채점 상태 객체
-    private Status status;
+    private Status status;          // 채점 상태 객체
 
     @Getter
     @Setter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Status {
-        // 상태 ID (예: 3 = Accepted, 4 = Wrong Answer)
-        private int id;
-
-        // 상태 설명
-        private String description;
+        private int id;             // 상태 ID (예: 3 = Accepted, 4 = Wrong Answer)
+        private String description; // 상태 설명
     }
 }
