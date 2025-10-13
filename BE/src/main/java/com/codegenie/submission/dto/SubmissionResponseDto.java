@@ -10,6 +10,7 @@ package com.codegenie.submission.dto;
 import lombok.*;
 import java.time.LocalDateTime;
 
+// * author: 김기성
 @Getter
 @Setter
 @ToString

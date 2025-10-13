@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
+// * author: 김기성
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true) // Judge0 응답의 모든 필드를 매핑하지 않으므로, 모르는 필드는 무시하도록 설정

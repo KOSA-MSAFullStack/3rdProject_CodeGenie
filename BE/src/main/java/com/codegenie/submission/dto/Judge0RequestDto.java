@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+// * author: 김기성
 @Getter
 @AllArgsConstructor
 public class Judge0RequestDto {

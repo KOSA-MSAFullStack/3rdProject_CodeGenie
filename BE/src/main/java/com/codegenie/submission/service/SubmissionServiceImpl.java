@@ -27,10 +27,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+// * author: 김기성
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -47,8 +47,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private static final Map<String, Integer> LANGUAGE_MAP = Map.of(
             "Java", 62,
             "Python", 71,
-            "C++", 54
-    );
+            "C++", 54);
 
     @Override
     public SubmissionResponseDto submitAnswer(SubmissionRequestDto requestDto, Integer memberId) {

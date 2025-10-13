@@ -10,6 +10,7 @@ package com.codegenie.submission.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+// * author: 김기성
 @Getter
 @Setter
 public class SubmissionRequestDto {
