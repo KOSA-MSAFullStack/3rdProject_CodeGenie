@@ -15,11 +15,12 @@ import com.codegenie.submission.dto.SubmissionRequestDto;
 import com.codegenie.submission.dto.SubmissionResponseDto;
 import com.codegenie.submission.entity.Submission;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+//import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
 // * author: 김기성
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface SubmissionMapper {
 
     // SubmissionMapper 인스턴스
@@ -27,15 +28,15 @@ public interface SubmissionMapper {
 
     // SubmissionRequestDto를 Submission 엔티티로 변환
     // member 필드는 서비스 계층에서 직접 설정
-    @Mapping(target = "submissionId", ignore = true)
-    @Mapping(target = "member", ignore = true)
-    @Mapping(target = "status", ignore = true)
-    @Mapping(target = "stdout", ignore = true)
-    @Mapping(target = "stderr", ignore = true)
-    @Mapping(target = "runTime", ignore = true)
-    @Mapping(target = "memory", ignore = true)
-    @Mapping(target = "submittedAt", ignore = true)
     Submission toEntity(SubmissionRequestDto dto);
+    //@Mapping(target = "submissionId", ignore = true)
+    //@Mapping(target = "member", ignore = true)
+    //@Mapping(target = "status", ignore = true)
+    //@Mapping(target = "stdout", ignore = true)
+    //@Mapping(target = "stderr", ignore = true)
+    //@Mapping(target = "runTime", ignore = true)
+    //@Mapping(target = "memory", ignore = true)
+    //@Mapping(target = "submittedAt", ignore = true)
 
     // Submission 엔티티를 SubmissionResponseDto로 변환
     SubmissionResponseDto toDto(Submission entity);
