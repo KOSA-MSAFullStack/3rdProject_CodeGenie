@@ -57,9 +57,9 @@
           </div>
         </div>
 
-        <!-- 제출 탭 (임시) -->
-        <div v-else class="submit-area">
-          <div class="empty">제출 기능은 추후 연결됩니다.</div>
+        <!-- 제출 탭 -->
+        <div v-else-if="tab === 'submit'" class="submit-area">
+          <SubmissionEditor v-if="cur" :quiz-id="cur.id" />
         </div>
       </template>
     </section>
@@ -123,6 +123,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import api from '../lib/api'
+import SubmissionEditor from '../components/SubmissionEditor.vue'
 
 const route = useRoute()
 const id = computed(() => route.params.id)
