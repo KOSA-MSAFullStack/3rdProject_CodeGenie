@@ -46,13 +46,13 @@ public class SecurityConfig {
 
         // 인가 설정
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/join", "/login").permitAll()
+                .requestMatchers("/", "/api/join", "/api/login").permitAll()
                 .anyRequest().authenticated()
         );
 
         // 커스텀 로그인 필터 (JWT 발급)
         LoginFilter loginFilter = new LoginFilter(authenticationManager, jwtUtil);
-        loginFilter.setFilterProcessesUrl("/login"); // 로그인 URL 명시
+        loginFilter.setFilterProcessesUrl("/api/login"); // 로그인 URL 명시
 
         // JWT 검증 필터 (모든 요청 검증)
         JWTFilter jwtFilter = new JWTFilter(jwtUtil, userDetailsService);
@@ -64,10 +64,11 @@ public class SecurityConfig {
         // CORS 허용 (Authorization 헤더용)
         http.cors(cors -> cors.configurationSource(request -> {
             var config = new org.springframework.web.cors.CorsConfiguration();
-            config.setAllowedOrigins(java.util.List.of("*"));
+            config.setAllowedOrigins(java.util.List.of("http://localhost:5173")); 
             config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
             config.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type"));
             config.setExposedHeaders(java.util.List.of("Authorization"));
+            config.setAllowCredentials(true);
             return config;
         }));
 
