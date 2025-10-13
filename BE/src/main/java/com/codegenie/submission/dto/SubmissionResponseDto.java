@@ -10,6 +10,7 @@ package com.codegenie.submission.dto;
 import lombok.*;
 import java.time.LocalDateTime;
 
+// * author: 김기성
 @Getter
 @Setter
 @ToString
@@ -17,33 +18,14 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SubmissionResponseDto {
-    // 제출 ID (PK)
-    private Integer submissionId;
-
-    // 문제 ID (FK)
-    private Integer quizId;
-
-    // 제출된 소스 코드
-    private String answer;
-
-    // 사용 언어
-    private String language;
-
-    // 채점 상태
-    private String status;
-
-    // 표준 출력
-    private String stdout;
-
-    // 표준 에러
-    private String stderr;
-
-    // 실행 시간
-    private Double runTime;
-
-    // 사용 메모리 (KB)
-    private Integer memory;
-
-    // 제출 시간
-    private LocalDateTime submittedAt;
+    private Integer submissionId;       // 제출 ID (PK)
+    private Integer quizId;             // 문제 ID (FK)
+    private String answer;              // 제출된 소스 코드
+    private String language;            // 사용 언어
+    private String status;              // 채점 상태
+    private String stdout;              // 표준 출력
+    private String stderr;              // 표준 에러
+    private Double runTime;             // 실행 시간
+    private Integer memory;             // 사용 메모리 (KB)
+    private LocalDateTime submittedAt;  // 제출 시간
 }

@@ -18,6 +18,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
+// * author: 김기성
 @Entity
 @Getter
 @Setter

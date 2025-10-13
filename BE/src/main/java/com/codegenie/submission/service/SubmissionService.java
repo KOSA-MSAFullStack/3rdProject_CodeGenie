@@ -12,6 +12,7 @@ package com.codegenie.submission.service;
 import com.codegenie.submission.dto.SubmissionRequestDto;
 import com.codegenie.submission.dto.SubmissionResponseDto;
 
+// * author: 김기성
 public interface SubmissionService {
 
     /**

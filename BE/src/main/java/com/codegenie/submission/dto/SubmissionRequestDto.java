@@ -10,15 +10,11 @@ package com.codegenie.submission.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+// * author: 김기성
 @Getter
 @Setter
 public class SubmissionRequestDto {
-    // 문제 ID
-    private Integer quizId;
-
-    // 사용자가 작성한 소스 코드
-    private String answer;
-
-    // 사용 언어 (예: "Java", "Python")
-    private String language;
+    private Integer quizId;     // 문제 ID
+    private String answer;      // 사용자가 작성한 소스 코드
+    private String language;    // 사용 언어 (예: "Java", "Python")
 }

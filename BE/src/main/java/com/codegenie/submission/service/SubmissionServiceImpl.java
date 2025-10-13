@@ -10,6 +10,7 @@
  */
 package com.codegenie.submission.service;
 
+import com.codegenie.submission.mapper.SubmissionMapper;
 import com.codegenie.member.entity.MemberEntity;
 import com.codegenie.member.repository.MemberRepository;
 import com.codegenie.submission.dto.Judge0RequestDto;
@@ -27,10 +28,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+// * author: 김기성
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -39,6 +40,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final SubmissionRepository submissionRepository;
     private final MemberRepository memberRepository;
     private final RestTemplate restTemplate;
+    private final SubmissionMapper submissionMapper;
 
     @Value("${judge0.api.url}")
     private String judge0ApiUrl;
@@ -47,8 +49,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private static final Map<String, Integer> LANGUAGE_MAP = Map.of(
             "Java", 62,
             "Python", 71,
-            "C++", 54
-    );
+            "C++", 54);
 
     @Override
     public SubmissionResponseDto submitAnswer(SubmissionRequestDto requestDto, Integer memberId) {
@@ -78,11 +79,8 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         // 5. 제출 기록 생성 및 저장
-        Submission submission = new Submission();
+        Submission submission = submissionMapper.toEntity(requestDto);
         submission.setMember(member);
-        submission.setQuizId(requestDto.getQuizId());
-        submission.setAnswer(requestDto.getAnswer());
-        submission.setLanguage(requestDto.getLanguage());
         submission.setStatus(judge0Response.getStatus().getDescription());
         submission.setRunTime(judge0Response.getTime());
         submission.setMemory(judge0Response.getMemory());
@@ -100,18 +98,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         Submission savedSubmission = submissionRepository.save(submission);
 
         // 6. 최종 응답 DTO 생성 및 반환
-        return SubmissionResponseDto.builder()
-                .submissionId(savedSubmission.getSubmissionId())
-                .quizId(savedSubmission.getQuizId())
-                .answer(savedSubmission.getAnswer())
-                .language(savedSubmission.getLanguage())
-                .status(savedSubmission.getStatus())
-                .stdout(savedSubmission.getStdout())
-                .stderr(savedSubmission.getStderr())
-                .runTime(savedSubmission.getRunTime())
-                .memory(savedSubmission.getMemory())
-                .submittedAt(savedSubmission.getSubmittedAt())
-                .build();
+        return submissionMapper.toDto(savedSubmission);
     }
 
     private int getLanguageId(String language) {
