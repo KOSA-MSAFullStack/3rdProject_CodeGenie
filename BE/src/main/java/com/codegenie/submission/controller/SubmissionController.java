@@ -1,12 +1,14 @@
 // SubmissionController.java
-// [컨트롤러] 문제 제출 관련 API 요청 처리
+// 문제 제출 관련 'API 요청&응답 처리'
 /*
  * 설명:
  * - 답안 제출 등 문제 제출 관련 HTTP 요청을 받아 처리하는 컨트롤러
+ * - 클라이언트로부터 RequestDto를 받아 서비스 계층에 처리 지시, 서비스로부터 받은 ResponseDto 다시 클라이언트에게 반환
  *
  * 주요 기능:
  * - 답안 제출 API
  */
+
 package com.codegenie.submission.controller;
 
 import com.codegenie.member.dto.CustomUserDetails;

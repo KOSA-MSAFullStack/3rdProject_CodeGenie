@@ -1,5 +1,5 @@
 // Submission.java
-// [엔티티] 문제 제출 정보
+// [Entity] 문제 제출 정보, 'DB 테이블과 직접 매핑 객체'
 /*
  * 설명:
  * - 사용자가 제출한 코드, 언어, 실행 결과 등을 저장하는 엔티티
@@ -8,6 +8,7 @@
  * 주요 기능:
  * - 제출된 코드 및 채점 결과 관리
  */
+
 package com.codegenie.submission.entity;
 
 import com.codegenie.member.entity.MemberEntity;

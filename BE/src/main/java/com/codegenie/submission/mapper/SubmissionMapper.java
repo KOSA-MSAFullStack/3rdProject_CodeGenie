@@ -1,5 +1,5 @@
 // SubmissionMapper.java
-// 역할: Submission 엔티티와 DTO 간 변환
+// Entity-DTO간 '데이터 변환'
 /*
  * 설명:
  * - Submission 엔티티와 SubmissionRequestDto, SubmissionResponseDto 간의 매핑 정의
@@ -27,16 +27,7 @@ public interface SubmissionMapper {
     SubmissionMapper INSTANCE = Mappers.getMapper(SubmissionMapper.class);
 
     // SubmissionRequestDto를 Submission 엔티티로 변환
-    // member 필드는 서비스 계층에서 직접 설정
     Submission toEntity(SubmissionRequestDto dto);
-    //@Mapping(target = "submissionId", ignore = true)
-    //@Mapping(target = "member", ignore = true)
-    //@Mapping(target = "status", ignore = true)
-    //@Mapping(target = "stdout", ignore = true)
-    //@Mapping(target = "stderr", ignore = true)
-    //@Mapping(target = "runTime", ignore = true)
-    //@Mapping(target = "memory", ignore = true)
-    //@Mapping(target = "submittedAt", ignore = true)
 
     // Submission 엔티티를 SubmissionResponseDto로 변환
     SubmissionResponseDto toDto(Submission entity);

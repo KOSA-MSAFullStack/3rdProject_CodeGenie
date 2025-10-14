@@ -5,6 +5,7 @@
  * - Judge0 API로 코드 채점을 요청할 때 사용하는 DTO
  * - 채점할 소스 코드와 언어 ID를 포함
  */
+
 package com.codegenie.submission.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;

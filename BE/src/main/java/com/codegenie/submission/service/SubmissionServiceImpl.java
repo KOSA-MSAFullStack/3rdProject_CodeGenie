@@ -1,5 +1,5 @@
 // SubmissionServiceImpl.java
-// [서비스] 문제 제출 비즈니스 로직 구현체
+// 문제 제출 '비즈니스 로직 구현체'
 /*
  * 설명:
  * - SubmissionService 인터페이스를 구현한 클래스
@@ -8,6 +8,7 @@
  * 주요 기능:
  * - 답안 제출 로직 구현
  */
+
 package com.codegenie.submission.service;
 
 import com.codegenie.submission.mapper.SubmissionMapper;
@@ -40,7 +41,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final SubmissionRepository submissionRepository;
     private final MemberRepository memberRepository;
     private final RestTemplate restTemplate;
-    private final SubmissionMapper submissionMapper;
+    private final SubmissionMapper submissionMapper;    // (1) Mapper 주입
 
     @Value("${judge0.api.url}")
     private String judge0ApiUrl;
@@ -79,7 +80,8 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         // 5. 제출 기록 생성 및 저장
-        Submission submission = submissionMapper.toEntity(requestDto);
+        Submission submission = submissionMapper.toEntity(requestDto);      // (2) DTO -> Entity 변환
+        
         submission.setMember(member);
         submission.setStatus(judge0Response.getStatus().getDescription());
         submission.setRunTime(judge0Response.getTime());
@@ -95,10 +97,10 @@ public class SubmissionServiceImpl implements SubmissionService {
             submission.setStderr(judge0Response.getStderr());
         }
 
-        Submission savedSubmission = submissionRepository.save(submission);
+        Submission savedSubmission = submissionRepository.save(submission);     // (3) DB에 저장
 
         // 6. 최종 응답 DTO 생성 및 반환
-        return submissionMapper.toDto(savedSubmission);
+        return submissionMapper.toDto(savedSubmission);     // (4) Entity -> DTO 변환 후 반환
     }
 
     private int getLanguageId(String language) {
