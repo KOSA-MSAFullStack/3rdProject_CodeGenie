@@ -87,6 +87,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     }
     
     //  내부 DTO 클래스 (JSON 매핑용)
+    @SuppressWarnings("unused")
     private static class LoginRequest {
         private String email;
         private String password;
