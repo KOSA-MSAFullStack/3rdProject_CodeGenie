@@ -1,4 +1,4 @@
-import api from "./api";
+import api from "./authApi";
 
 export const login = async (email, password) => {
   const response = await api.post("/login", { email, password }); // /api/login 으로 proxy됨
