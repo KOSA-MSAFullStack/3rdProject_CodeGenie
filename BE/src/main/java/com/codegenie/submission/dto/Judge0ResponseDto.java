@@ -5,6 +5,7 @@
  * - Judge0 API로부터 받은 채점 결과를 담는 DTO
  * - Jackson 라이브러리를 사용하여 JSON 응답을 객체로 매핑
  */
+
 package com.codegenie.submission.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

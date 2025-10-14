@@ -8,6 +8,7 @@
  * 주요 기능:
  * - 제출된 코드 및 채점 결과 관리
  */
+
 package com.codegenie.submission.entity;
 
 import com.codegenie.member.entity.MemberEntity;
