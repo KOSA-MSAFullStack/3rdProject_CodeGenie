@@ -1,5 +1,5 @@
 // SubmissionRepository.java
-// [리포지토리] 문제 제출 정보 DB 연동
+// 문제 제출 정보 'DB 접근&연동'
 /*
  * 설명:
  * - Submission 엔티티에 대한 DB 작업을 처리하는 JpaRepository
@@ -14,6 +14,7 @@ import com.codegenie.submission.entity.Submission;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+// * author: 김기성
 @Repository
 public interface SubmissionRepository extends JpaRepository<Submission, Integer> {
     // JpaRepository를 상속받는 것만으로도 기본적인 DB 작업 (save, findById, findAll, delete 등)이 가능

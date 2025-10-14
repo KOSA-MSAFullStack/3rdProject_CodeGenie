@@ -1,10 +1,11 @@
 // SubmissionResponseDto.java
-// [DTO] 문제 제출 결과 전송
+// [DTO] 문제 제출 결과 전송,'서버->클라이언트로 데이터 응답 객체'
 /*
  * 설명:
  * - 서버에서 클라이언트로 채점 결과를 전송할 때 사용하는 DTO
  * - 채점 상태, 실행 결과, 리소스 사용량 등 프론트엔드에 표시될 정보를 포함
  */
+
 package com.codegenie.submission.dto;
 
 import lombok.*;

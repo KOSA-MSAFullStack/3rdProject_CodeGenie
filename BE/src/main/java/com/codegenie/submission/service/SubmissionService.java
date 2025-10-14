@@ -1,5 +1,5 @@
 // SubmissionService.java
-// [서비스] 문제 제출 비즈니스 로직 인터페이스
+// 문제 제출 '비즈니스 로직 인터페이스'
 /*
  * 설명:
  * - 문제 제출 관련 비즈니스 로직을 정의하는 인터페이스
@@ -7,6 +7,7 @@
  * 주요 기능:
  * - 답안 제출 및 채점 요청 기능 명세
  */
+
 package com.codegenie.submission.service;
 
 import com.codegenie.submission.dto.SubmissionRequestDto;
