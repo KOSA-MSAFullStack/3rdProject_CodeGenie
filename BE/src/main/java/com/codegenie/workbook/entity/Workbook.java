@@ -1,31 +1,45 @@
 package com.codegenie.workbook.entity;
 
+import com.codegenie.member.entity.MemberEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-@Entity @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "workbooks")
 public class Workbook {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "workbook_id")
     private Long id;
 
-    private String language;            // Java, C++, ...
-    private String level;               // 초급/중급/고급
-    private String style;               // 간단요약/깊이설명/예시중심
-    @Column(columnDefinition = "TEXT")
-    private String requestDetail;       // 추가 요구사항
-    private String topic;               // 학습 주제명 (제목)
+    // ✅ FK: members(member_id)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private MemberEntity member;
 
-    private LocalDateTime createdAt;
+    @Column(name = "language", nullable = false)
+    private String language;
 
-    @OneToMany(mappedBy = "workbook", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("orderNo ASC")
-    @Builder.Default
-    private List<CodingQuiz> quizzes = new ArrayList<>();
+
+    @Column(name = "level", nullable = false)
+    private String level;
+
+    @Column(name = "style", nullable = false)
+    private String style;
+
+    @Lob
+    @Column(name = "request_detail", nullable = false, columnDefinition = "TEXT")
+    private String requestDetail;
+
+    @Column(name = "topic", nullable = false)
+    private String topic;
+
+    @Column(name = "is_upload", nullable = false)
+    private Boolean isUpload = Boolean.FALSE;
 }

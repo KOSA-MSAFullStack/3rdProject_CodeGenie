@@ -9,7 +9,7 @@ const authApi = axios.create({
 
 // 요청 인터셉터
 authApi.interceptors.request.use((config) => {
-  // ✅ 로그인/회원가입은 절대 토큰 안 붙임(방어로직)
+  // 로그인/회원가입은 절대 토큰 안 붙임(방어로직)
   const url = config.url || '';
   if (url.startsWith('/login') || url.startsWith('/join')) {
     return config;

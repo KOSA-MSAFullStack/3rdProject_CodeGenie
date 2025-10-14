@@ -1,18 +1,21 @@
 package com.codegenie.workbook.dto;
 
-import lombok.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
+import lombok.Getter;
 
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Builder
 public class QuizResponse {
     private Long id;
-    private Integer orderNo;
-    private String qname;
-    private String statement;
-    private String inputText;
-    private String outputText;
-    private String sampleInput;
+
+    @JsonProperty("workbook_id")
+    private Long workbookId;
+
+    private String quiz;
     private String explanation;
     private String concept;
-    private Long submissions;
-    private Long accepted;
+
+    @JsonProperty("is_saved")
+    private boolean isSaved;
 }

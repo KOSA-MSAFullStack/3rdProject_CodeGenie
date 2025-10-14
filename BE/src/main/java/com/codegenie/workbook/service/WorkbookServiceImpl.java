@@ -1,5 +1,7 @@
 package com.codegenie.workbook.service;
 
+import com.codegenie.member.entity.MemberEntity;
+import com.codegenie.member.repository.MemberRepository;
 import com.codegenie.workbook.dto.CreateWorkbookRequest;
 import com.codegenie.workbook.dto.QuizResponse;
 import com.codegenie.workbook.dto.WorkbookResponse;
@@ -7,122 +9,179 @@ import com.codegenie.workbook.entity.CodingQuiz;
 import com.codegenie.workbook.entity.Workbook;
 import com.codegenie.workbook.repository.CodingQuizRepository;
 import com.codegenie.workbook.repository.WorkbookRepository;
+import com.codegenie.workbook.view.QuizView;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.ai.chat.client.ChatClient;                 // ✅ 변경
-import org.springframework.ai.chat.model.ChatResponse;           // ✅ 패키지 주의
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
 
-/**
- * 문제집 생성: 프론트의 폼(언어/난이도/학습스타일/요청상세/주제) → Spring AI 호출 → JSON 10문제 파싱 → DB 저장 → 응답 DTO
- */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WorkbookServiceImpl implements WorkbookService {
 
     private final WorkbookRepository workbookRepository;
     private final CodingQuizRepository codingQuizRepository;
+    private final MemberRepository memberRepository;
+    private final ChatClient chatClient;
 
-    // ❌ (삭제) private final OpenAiChatClient chatClient;
-    private final ChatClient chatClient;                           // ✅ ChatClient 로 교체
-
-    private final ObjectMapper objectMapper = new ObjectMapper();  // JSON 파서
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     @Transactional
     public WorkbookResponse create(CreateWorkbookRequest req) {
-        // 1) 문제집 생성/저장 (엔티티)
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = (auth != null ? auth.getName() : null);
+        if (email == null) throw new IllegalStateException("로그인 정보가 없습니다.");
+
+        MemberEntity member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다: " + email));
+
         Workbook wb = Workbook.builder()
-                .language(req.getLanguage())
-                .level(req.getLevel())
-                .style(req.getStyle())
-                .requestDetail(req.getRequestDetail())
-                .topic(req.getTopic())
-                .createdAt(LocalDateTime.now()) // 엔티티 필드에만 사용, 응답 DTO에는 포함 안 함
+                .member(member)
+                .language(nullSafe(req.getLanguage()))
+                .level(nullSafe(req.getLevel()))
+                .style(nullSafe(req.getStyle()))
+                .requestDetail(nullSafe(req.getRequestDetail()))
+                .topic(nullSafe(req.getTopic()))
+                .isUpload(Boolean.FALSE)
                 .build();
         workbookRepository.save(wb);
 
-        // 2) 프롬프트 작성(난이도/스타일 가이드 명시)
+        // ===== 프롬프트 (요청사항 반영: 다양화 + 개념 서술형) =====
         String promptText = buildPrompt(req);
 
-        // 3) OpenAI 호출 + JSON 파싱
         List<AiQuizDTO> aiQuizzes = callOpenAiAndParse(promptText);
-
-        // 4) 실패/비어있으면 안전한 더미 10개
         if (aiQuizzes == null || aiQuizzes.isEmpty()) {
-            aiQuizzes = fallbackDummy();
+            log.error("AI 퀴즈 생성 실패: 빈 결과");
+            throw new IllegalStateException("퀴즈 생성 실패");
         }
 
-        // 5) DB 저장
-        List<CodingQuiz> saved = new ArrayList<>();
-        int order = 1;
         for (AiQuizDTO q : aiQuizzes) {
+            String quizBody = """
+[문제]
+%s
+
+[입력]
+%s
+
+[출력]
+%s
+
+[예제 입력]
+%s
+""".formatted(
+                    defaultIfBlank(q.statement(), ""),
+                    defaultIfBlank(q.inputText(), ""),
+                    defaultIfBlank(q.outputText(), ""),
+                    defaultIfBlank(q.sampleInput(), "")
+            );
+
             CodingQuiz entity = CodingQuiz.builder()
                     .workbook(wb)
-                    .orderNo(q.orderNo() != null ? q.orderNo() : order)
-                    .qname(defaultIfBlank(q.qname(), "문제 " + order))
-                    .statement(defaultIfBlank(q.statement(), "두 정수 A와 B를 입력받아 A+B를 출력하세요."))
-                    .inputText(defaultIfBlank(q.inputText(), "첫째 줄에 A와 B가 주어진다. (0 < A, B < 10)"))
-                    .outputText(defaultIfBlank(q.outputText(), "첫째 줄에 A+B를 출력한다."))
-                    .sampleInput(defaultIfBlank(q.sampleInput(), "1 2"))
-                    .explanation(defaultIfBlank(q.explanation(), "표준입출력 + 기본 연산 개념을 익혀봅니다."))
-                    .concept(defaultIfBlank(q.concept(), "입출력,연산자,정수"))
-                    .submissions(0L)
-                    .accepted(0L)
+                    .quiz(quizBody)
+                    .explanation(defaultIfBlank(q.explanation(), ""))
+                    .concept(defaultIfBlank(q.concept(), "")) // ← 서술형 텍스트 수신
+                    .isSaved(Boolean.FALSE)
                     .build();
-            codingQuizRepository.save(entity);
-            saved.add(entity);
-            order++;
-        }
-        saved.sort(Comparator.comparing(CodingQuiz::getOrderNo));
 
-        // 6) 응답 DTO 조립 (프론트 카드 포맷)
+            codingQuizRepository.save(entity);
+        }
+
+        return toDto(wb, false, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WorkbookResponse getOneDto(Long id) {
+        Workbook wb = workbookRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Workbook not found: " + id));
+
+        List<CodingQuiz> quizzes = codingQuizRepository.findByWorkbookIdOrderByIdAsc(id);
+        List<QuizResponse> quizDtos = quizzes.stream().map(this::toQuizResponse).toList();
+
+        return toDto(wb, true, quizDtos);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<QuizView> getQuizzes(Long workbookId) {
+        return codingQuizRepository.findByWorkbookIdOrderByIdAsc(workbookId)
+                .stream()
+                .map(this::toView)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WorkbookResponse> getRecent(int limit) {
+        var all = workbookRepository.findAll();
+        all.sort((a, b) -> Long.compare(b.getId(), a.getId()));
+        return all.stream()
+                .limit(limit)
+                .map(wb -> toDto(wb, false, null))
+                .toList();
+    }
+
+    private WorkbookResponse toDto(Workbook wb, boolean includeQuizzes, List<QuizResponse> quizzes) {
+        Long memberId = null;
+        if (wb.getMember() != null) {
+            memberId = Long.valueOf(wb.getMember().getMember_id());
+        }
+
         return WorkbookResponse.builder()
                 .id(wb.getId())
-                .topic(wb.getTopic())
+                .memberId(memberId)
                 .language(wb.getLanguage())
                 .level(wb.getLevel())
                 .style(wb.getStyle())
                 .requestDetail(wb.getRequestDetail())
-                .quizzes(saved.stream().map(this::toQuizResponse).toList())
+                .isUpload(wb.getIsUpload())
+                .topic(wb.getTopic())
+                .quizzes(includeQuizzes ? (quizzes != null ? quizzes : List.of()) : null)
                 .build();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Workbook getOne(Long id) {
-        return workbookRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Workbook not found: " + id));
+    private QuizResponse toQuizResponse(CodingQuiz cq) {
+        return QuizResponse.builder()
+                .id(cq.getId())
+                .workbookId(cq.getWorkbook() != null ? cq.getWorkbook().getId() : null)
+                .quiz(defaultIfBlank(cq.getQuiz(), ""))
+                .explanation(defaultIfBlank(cq.getExplanation(), ""))
+                .concept(defaultIfBlank(cq.getConcept(), ""))
+                .isSaved(Boolean.TRUE.equals(cq.getIsSaved()))
+                .build();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<CodingQuiz> getQuizzes(Long workbookId) {
-        return codingQuizRepository.findByWorkbookIdOrderByOrderNoAsc(workbookId);
+    private QuizView toView(CodingQuiz cq) {
+        Sections sec = splitSections(defaultIfBlank(cq.getQuiz(), ""));
+        return QuizView.builder()
+                .id(cq.getId())
+                .statement(sec.statement)
+                .input(sec.input)
+                .output(sec.output)
+                .sampleInput(sec.sample)
+                .explanation(defaultIfBlank(cq.getExplanation(), ""))
+                .concept(defaultIfBlank(cq.getConcept(), "")) // ← 서술형 그대로 노출
+                .spec(new QuizView.Spec(0L, 0L))
+                .build();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Workbook> getRecent(int limit) {
-        var all = workbookRepository.findAll();
-        all.sort((a, b) -> Long.compare(b.getId(), a.getId())); // ID desc
-        return all.stream().limit(limit).toList();
-    }
+    /* ============================== 프롬프트 ============================== */
 
-    /* ============================== Private Helpers ============================== */
-
-    // 🔥 강화된 프롬프트: 난이도/스타일 가이드 명시 + 출력 포맷 고정
     private String buildPrompt(CreateWorkbookRequest req) {
         String level = nullSafe(req.getLevel());
         String style = nullSafe(req.getStyle());
@@ -157,22 +216,32 @@ public class WorkbookServiceImpl implements WorkbookService {
             case "간단요약" -> """
                 - 학습 스타일: 간단요약
                 - 해설은 핵심 포인트만 4~6줄 이내 요약
-                - 개념은 콤마(,)로 3~6개 키워드만 제시
+                - 개념은 '키워드 나열'이 아닌 '서술형 설명'으로 4~8줄 작성
                 """;
             case "깊이설명" -> """
                 - 학습 스타일: 깊이설명
                 - 해설은 접근 아이디어 → 복잡도 → 코너케이스 순(8~12줄)
-                - 개념에는 핵심 이론 + 오용 주의점 포함(콤마로 4~8개)
+                - 개념은 원리/오용주의/실전팁을 포함해 '서술형' 6~12줄
                 """;
             case "예시중심" -> """
                 - 학습 스타일: 예시중심
                 - 해설은 작은 예제 1~2개로 단계별 풀이 설명(6~10줄)
-                - sampleInput은 실제 이해에 도움이 되는 값
+                - 개념은 예시를 곁들여 '서술형' 5~10줄
                 """;
             default -> """
                 - 학습 스타일: 일반
                 """;
         };
+
+        // ★ 추가: 학습 다양화 규칙
+        String diversify = """
+            [학습 다양화 규칙]
+            - 특정 하위 주제(예: 배열)가 언급되더라도 동일 하위 주제만 반복하지 말 것.
+            - 총 10문제 중 '사용자가 특히 어렵다고 한 부분'은 최대 3~4문제까지만 포함.
+            - 나머지는 주제와 인접한 개념(문자열, 조건/반복, 자료구조 기초, 간단 알고리즘, 예외/엣지케이스, 실무 응용)을 섞어서 구성.
+            - 문제 유형도 다양화: 결과예측/오류찾기/입출력 변형/예제추론/미니구현/설명형 등을 섞기.
+            - 난이도 완급조절: 쉬움(3)·보통(4)·살짝도전(3) 정도 권장.
+            """;
 
         return ("""
             역할: 당신은 한국어로 답변하는 %s 튜터입니다. 아래 입력을 반영해 '코딩 연습 문제 10개'를 생성하세요.
@@ -191,6 +260,8 @@ public class WorkbookServiceImpl implements WorkbookService {
             [학습 스타일 가이드]
             %s
 
+            %s
+
             [출력 형식 규칙]
             - 출력은 오직 JSON 배열 한 덩어리만: 크기 정확히 10.
             - 각 원소는 아래 모든 필드를 포함:
@@ -202,84 +273,70 @@ public class WorkbookServiceImpl implements WorkbookService {
                 "outputText": "출력 형식 설명 (1~2줄)",
                 "sampleInput": "예제 입력 (간단 값)",
                 "explanation": "해설 (스타일 가이드 준수)",
-                "concept": "관련 개념 키워드(콤마로 구분, 3~8개)"
+                "concept": "관련 개념 '서술형 설명'(키워드 나열 금지)"
               }
             - 문자열 내 따옴표/개행 등은 유효한 JSON으로 이스케이프.
             - orderNo는 1부터 10까지 증가.
             - %s 언어로 풀이 아이디어를 안내하되, 실제 코드 출력은 하지 않음.
             """).formatted(
-                language,            // 역할 문구
+                language,
                 language, level, style, topic, detail,
                 levelRubric, styleRubric,
+                diversify,
                 language
         );
     }
 
     private List<AiQuizDTO> callOpenAiAndParse(String promptText) {
         try {
-            // ✅ ChatClient 사용 (Prompt/Message 그대로 사용 가능)
             ChatResponse response = chatClient
                     .prompt(new Prompt(new UserMessage(promptText)))
                     .call()
                     .chatResponse();
 
             String content = response.getResult().getOutput().getContent();
-            String json = sanitizeToJsonArray(content); // ```json 제거 + 배열만 추출
+            String json = sanitizeToJsonArray(content);
             return objectMapper.readValue(json, new TypeReference<List<AiQuizDTO>>() {});
         } catch (Exception e) {
-            e.printStackTrace();
-            return null; // 파싱 실패 → fallbackDummy() 사용
+            log.error("AI 호출/파싱 실패", e);
+            return null;
         }
     }
 
-    // 백틱 코드펜스 제거 + 대괄호로 감싼 JSON 배열만 추출
     private String sanitizeToJsonArray(String raw) {
         if (raw == null) return "[]";
         String s = raw.trim();
-        // 코드펜스 제거
         s = s.replace("```json", "").replace("```", "").trim();
-        // 배열만 추출
-        int start = s.indexOf('[');
-        int end = s.lastIndexOf(']');
-        if (start >= 0 && end > start) {
-            s = s.substring(start, end + 1);
-        }
+        int start = s.indexOf('['), end = s.lastIndexOf(']');
+        if (start >= 0 && end > start) s = s.substring(start, end + 1);
         if (!s.startsWith("[")) return "[]";
         return s;
     }
 
-    private List<AiQuizDTO> fallbackDummy() {
-        List<AiQuizDTO> list = new ArrayList<>();
-        for (int i = 1; i <= 10; i++) {
-            list.add(new AiQuizDTO(
-                    i,
-                    "문제 " + i,
-                    "두 정수 A와 B를 입력받아 A+B를 출력하세요.",
-                    "첫째 줄에 A와 B가 주어진다. (0 < A, B < 10)",
-                    "첫째 줄에 A+B를 출력한다.",
-                    "1 2",
-                    "표준입출력과 정수 덧셈을 연습합니다.",
-                    "입출력,연산자,정수"
-            ));
-        }
-        return list;
-    }
+    private record Sections(String statement, String input, String output, String sample) {}
 
-    // 엔티티 -> 응답 DTO
-    private QuizResponse toQuizResponse(CodingQuiz q) {
-        return QuizResponse.builder()
-                .id(q.getId())
-                .orderNo(q.getOrderNo())
-                .qname(q.getQname())
-                .statement(q.getStatement())
-                .inputText(q.getInputText())
-                .outputText(q.getOutputText())
-                .sampleInput(q.getSampleInput())
-                .explanation(q.getExplanation())
-                .concept(q.getConcept())
-                .submissions(q.getSubmissions())
-                .accepted(q.getAccepted())
-                .build();
+    private Sections splitSections(String raw) {
+        String stmt = "", in = "", out = "", sample = "";
+        var p = Pattern.compile("\\[(문제|입력|출력|예제 입력)]");
+        var m = p.matcher(raw);
+        List<Integer> idx = new ArrayList<>();
+        List<String> lab = new ArrayList<>();
+        while (m.find()) { idx.add(m.start()); lab.add(m.group(1)); }
+        idx.add(raw.length());
+
+        for (int i = 0; i < lab.size(); i++) {
+            String label = lab.get(i);
+            int from = raw.indexOf(']', idx.get(i)) + 1;
+            int to = idx.get(i + 1);
+            String body = raw.substring(Math.max(from, 0), Math.max(to, from)).trim();
+            switch (label) {
+                case "문제" -> stmt = body;
+                case "입력" -> in = body;
+                case "출력" -> out = body;
+                case "예제 입력" -> sample = body;
+            }
+        }
+        return new Sections(stmt, in, out, sample);
     }
 
     private static String nullSafe(String s) { return s == null ? "" : s; }
@@ -287,7 +344,6 @@ public class WorkbookServiceImpl implements WorkbookService {
         return (s == null || s.isBlank()) ? def : s;
     }
 
-    /* OpenAI 응답 JSON 매핑용 DTO (필요 필드만; 여분은 무시) */
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record AiQuizDTO(
             Integer orderNo,
