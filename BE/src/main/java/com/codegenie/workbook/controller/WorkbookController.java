@@ -26,13 +26,13 @@ public class WorkbookController {
 
     /** 문제집 단건 조회 - DTO 반환 */
     @GetMapping("/{id}")
-    public ResponseEntity<WorkbookResponse> getWorkbook(@PathVariable Long id) {
+    public ResponseEntity<WorkbookResponse> getWorkbook(@PathVariable Integer id) {
         return ResponseEntity.ok(workbookService.getOneDto(id));
     }
 
     /** 문제 리스트 조회 (뷰 DTO) */
     @GetMapping("/{id}/quizzes")
-    public ResponseEntity<List<QuizView>> getQuizzes(@PathVariable Long id) {
+    public ResponseEntity<List<QuizView>> getQuizzes(@PathVariable Integer id) {
         return ResponseEntity.ok(workbookService.getQuizzes(id));
     }
 

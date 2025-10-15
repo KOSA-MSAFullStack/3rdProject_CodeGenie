@@ -106,7 +106,7 @@ public class WorkbookServiceImpl implements WorkbookService {
 
     @Override
     @Transactional(readOnly = true)
-    public WorkbookResponse getOneDto(Long id) {
+    public WorkbookResponse getOneDto(Integer id) {
         Workbook wb = workbookRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Workbook not found: " + id));
 
@@ -118,7 +118,7 @@ public class WorkbookServiceImpl implements WorkbookService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<QuizView> getQuizzes(Long workbookId) {
+    public List<QuizView> getQuizzes(Integer workbookId) {
         return codingQuizRepository.findByWorkbookIdOrderByIdAsc(workbookId)
                 .stream()
                 .map(this::toView)
@@ -129,7 +129,7 @@ public class WorkbookServiceImpl implements WorkbookService {
     @Transactional(readOnly = true)
     public List<WorkbookResponse> getRecent(int limit) {
         var all = workbookRepository.findAll();
-        all.sort((a, b) -> Long.compare(b.getId(), a.getId()));
+        all.sort((a, b) -> Integer.compare(b.getId(), a.getId()));
         return all.stream()
                 .limit(limit)
                 .map(wb -> toDto(wb, false, null))
@@ -137,9 +137,9 @@ public class WorkbookServiceImpl implements WorkbookService {
     }
 
     private WorkbookResponse toDto(Workbook wb, boolean includeQuizzes, List<QuizResponse> quizzes) {
-        Long memberId = null;
+        Integer memberId = null;
         if (wb.getMember() != null) {
-            memberId = Long.valueOf(wb.getMember().getMember_id());
+            memberId = wb.getMember().getMember_id();
         }
 
         return WorkbookResponse.builder()

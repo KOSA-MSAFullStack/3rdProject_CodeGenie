@@ -11,6 +11,7 @@
 
 package com.codegenie.submission.entity;
 
+import com.codegenie.workbook.entity.CodingQuiz;
 import com.codegenie.member.entity.MemberEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -37,9 +38,10 @@ public class Submission {
     @JoinColumn(name = "member_id", nullable = false)
     private MemberEntity member;
 
-    // 문제 ID (FK)
-    @Column(name = "quiz_id", nullable = false)
-    private Integer quizId;
+    // 문제 (FK)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "quiz_id", nullable = false)
+    private CodingQuiz codingQuiz;
 
     // 제출된 소스 코드
     @Column(name = "answer", columnDefinition = "MEDIUMTEXT", nullable = false)

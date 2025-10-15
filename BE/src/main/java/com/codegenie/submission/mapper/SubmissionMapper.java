@@ -15,7 +15,7 @@ import com.codegenie.submission.dto.SubmissionRequestDto;
 import com.codegenie.submission.dto.SubmissionResponseDto;
 import com.codegenie.submission.entity.Submission;
 import org.mapstruct.Mapper;
-//import org.mapstruct.Mapping;
+import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
@@ -30,5 +30,6 @@ public interface SubmissionMapper {
     Submission toEntity(SubmissionRequestDto dto);
 
     // Submission 엔티티를 SubmissionResponseDto로 변환
+    @Mapping(source = "member.member_id", target = "memberId")
     SubmissionResponseDto toDto(Submission entity);
 }

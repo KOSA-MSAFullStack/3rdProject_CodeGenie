@@ -9,16 +9,19 @@
 package com.codegenie.submission.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 // * author: 김기성
 @Getter
-@AllArgsConstructor
 public class Judge0RequestDto {
-    @JsonProperty("source_code")    // 채점할 소스 코드
-    private String sourceCode;
+    @JsonProperty("source_code")
+    private final String sourceCode;
 
-    @JsonProperty("language_id")    // Judge0에서 사용하는 언어 ID
-    private int languageId;
+    @JsonProperty("language_id")
+    private final int languageId;
+
+    public Judge0RequestDto(String sourceCode, int languageId) {
+        this.sourceCode = sourceCode;
+        this.languageId = languageId;
+    }
 }

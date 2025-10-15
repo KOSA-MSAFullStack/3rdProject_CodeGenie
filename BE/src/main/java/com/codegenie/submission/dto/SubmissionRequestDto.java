@@ -8,6 +8,7 @@
 
 package com.codegenie.submission.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,6 +17,9 @@ import lombok.Setter;
 @Setter
 public class SubmissionRequestDto {
     private Integer quizId;     // 문제 ID
+
+    @JsonProperty("answer")
     private String answer;      // 사용자가 작성한 소스 코드
+    
     private String language;    // 사용 언어 (예: "Java", "Python")
 }

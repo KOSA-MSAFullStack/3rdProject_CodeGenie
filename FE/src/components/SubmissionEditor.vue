@@ -16,7 +16,7 @@
     <!-- 제출 버튼 -->
     <div class="actions">
       <button @click="handleSubmit" :disabled="isLoading">
-        {{ isLoading ? '채점 중...' : '제출하기' }}
+        {{ isLoading ? "채점 중..." : "제출하기" }}
       </button>
     </div>
 
@@ -30,11 +30,11 @@
         </div>
         <div class="grid-item">
           <strong>실행 시간</strong>
-          <span>{{ result.time != null ? `${result.time} s` : '-' }}</span>
+          <span>{{ result.time != null ? `${result.time} s` : "-" }}</span>
         </div>
         <div class="grid-item">
           <strong>메모리 사용</strong>
-          <span>{{ result.memory != null ? `${result.memory} KB` : '-' }}</span>
+          <span>{{ result.memory != null ? `${result.memory} KB` : "-" }}</span>
         </div>
       </div>
       <div v-if="result.stdout" class="output-box">
@@ -50,97 +50,97 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import * as monaco from 'monaco-editor'
-import api from '../lib/api'
+import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import * as monaco from "monaco-editor";
+import authApi from "../lib/authApi";
 
 const props = defineProps({
   quizId: {
     type: Number,
     required: true,
   },
-})
+});
 
-const editorRef = ref(null)
-let editorInstance = null
+const editorRef = ref(null);
+let editorInstance = null;
 
-const language = ref('Java')
-const code = ref('')
-const isLoading = ref(false)
-const result = ref(null)
+const language = ref("Java");
+const code = ref("");
+const isLoading = ref(false);
+const result = ref(null);
 
-const statusClass = ref('')
+const statusClass = ref("");
 
 // Monaco Editor 초기화
 onMounted(() => {
   if (editorRef.value) {
     editorInstance = monaco.editor.create(editorRef.value, {
       value: `// 여기에 코드를 작성하세요`,
-      language: 'java',
-      theme: 'vs-light',
+      language: "java",
+      theme: "vs-light",
       automaticLayout: true,
-    })
+    });
 
     // 코드가 변경될 때마다 ref에 반영
     editorInstance.onDidChangeModelContent(() => {
-      code.value = editorInstance.getValue()
-    })
+      code.value = editorInstance.getValue();
+    });
   }
-})
+});
 
 // 컴포넌트 파괴 전 에디터 인스턴스 정리
 onBeforeUnmount(() => {
   if (editorInstance) {
-    editorInstance.dispose()
+    editorInstance.dispose();
   }
-})
+});
 
 // 언어 변경 시 에디터 언어 모드 변경
 watch(language, (newLang) => {
   if (editorInstance) {
-    const model = editorInstance.getModel()
+    const model = editorInstance.getModel();
     if (model) {
-      const langMap = { 'Java': 'java', 'Python': 'python', 'C++': 'cpp' };
-      monaco.editor.setModelLanguage(model, langMap[newLang] || 'plaintext')
+      const langMap = { Java: "java", Python: "python", "C++": "cpp" };
+      monaco.editor.setModelLanguage(model, langMap[newLang] || "plaintext");
     }
   }
-})
+});
 
 // 제출 핸들러
 async function handleSubmit() {
   if (!code.value.trim()) {
-    alert('코드를 입력하세요.')
-    return
+    alert("코드를 입력하세요.");
+    return;
   }
 
-  isLoading.value = true
-  result.value = null
-  statusClass.value = ''
+  isLoading.value = true;
+  result.value = null;
+  statusClass.value = "";
 
   try {
-    const response = await api.post('/submission', {
+    const response = await authApi.post("/submission", {
       quizId: props.quizId,
       answer: code.value,
       language: language.value,
-    })
-    result.value = response.data
+    });
+    result.value = response.data;
 
     // 상태에 따라 클래스 부여
-    if (result.value.status === 'Accepted') {
-        statusClass.value = 'status-accepted';
+    if (result.value.status === "Accepted") {
+      statusClass.value = "status-accepted";
     } else {
-        statusClass.value = 'status-error';
+      statusClass.value = "status-error";
     }
-
   } catch (error) {
-    console.error('Submission failed:', error)
+    console.error("Submission failed:", error);
     result.value = {
-      status: 'Error',
-      stderr: error.response?.data?.message || '채점 서버에 연결할 수 없습니다.',
-    }
-    statusClass.value = 'status-error';
+      status: "Error",
+      stderr:
+        error.response?.data?.message || "채점 서버에 연결할 수 없습니다.",
+    };
+    statusClass.value = "status-error";
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 </script>
@@ -234,9 +234,9 @@ async function handleSubmit() {
   color: #d92d20;
 }
 .status-accepted {
-    color: #16a34a;
+  color: #16a34a;
 }
 .status-error {
-    color: #d92d20;
+  color: #d92d20;
 }
 </style>

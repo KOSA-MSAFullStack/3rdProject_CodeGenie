@@ -9,10 +9,10 @@ import java.util.List;
 @Getter
 @Builder
 public class WorkbookResponse {
-    private Long id;
+    private Integer id;
 
     @JsonProperty("member_id")
-    private Long memberId;
+    private Integer memberId;
 
     private String language;
     private String level;
