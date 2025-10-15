@@ -9,29 +9,33 @@
  * - 답안 제출 성공 케이스 테스트
  */
 
- package com.codegenie.submission;
+package com.codegenie.submission;
 
- import com.codegenie.member.entity.MemberEntity;
- import com.codegenie.member.repository.MemberRepository;
- //import com.codegenie.submission.dto.Judge0RequestDto;
- import com.codegenie.submission.dto.Judge0ResponseDto;
- import com.codegenie.submission.dto.SubmissionRequestDto;
- import com.codegenie.submission.dto.SubmissionResponseDto;
- import com.codegenie.submission.entity.Submission;
- import com.codegenie.submission.mapper.SubmissionMapper;
- import com.codegenie.submission.repository.SubmissionRepository;
- import com.codegenie.submission.service.SubmissionServiceImpl;
- import org.junit.jupiter.api.DisplayName;
- import org.junit.jupiter.api.Test;
- import org.junit.jupiter.api.extension.ExtendWith;
- import org.mockito.InjectMocks;
- import org.mockito.Mock;
- import org.mockito.junit.jupiter.MockitoExtension;
- import org.springframework.web.client.RestTemplate;
+import com.codegenie.member.entity.MemberEntity;
+import com.codegenie.member.repository.MemberRepository;
+import com.codegenie.workbook.entity.CodingQuiz;
+import com.codegenie.workbook.repository.CodingQuizRepository;
+
+import java.util.Optional;
+//import com.codegenie.submission.dto.Judge0RequestDto;
+import com.codegenie.submission.dto.Judge0ResponseDto;
+import com.codegenie.submission.dto.SubmissionRequestDto;
+import com.codegenie.submission.dto.SubmissionResponseDto;
+import com.codegenie.submission.entity.Submission;
+import com.codegenie.submission.mapper.SubmissionMapper;
+import com.codegenie.submission.repository.SubmissionRepository;
+import com.codegenie.submission.service.SubmissionServiceImpl;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.test.util.ReflectionTestUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,7 +58,13 @@ class SubmissionServiceImplTest {
     private MemberRepository memberRepository;
 
     @Mock
+    private CodingQuizRepository codingQuizRepository;
+
+    @Mock
     private RestTemplate restTemplate;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @Mock
     private SubmissionMapper submissionMapper;
@@ -67,6 +77,7 @@ class SubmissionServiceImplTest {
         SubmissionRequestDto requestDto = new SubmissionRequestDto();
         requestDto.setAnswer("print(\"hello world\")");
         requestDto.setLanguage("Python");
+        requestDto.setQuizId(1); // Add a valid quizId for the test
 
         MemberEntity mockMember = new MemberEntity();
         mockMember.setMember_id(memberId);
@@ -91,6 +102,7 @@ class SubmissionServiceImplTest {
 
         // Mock 객체 행동 정의
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(mockMember));
+        when(codingQuizRepository.findById(any(Integer.class))).thenReturn(Optional.of(new CodingQuiz()));
         when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(Judge0ResponseDto.class))).thenReturn(judge0Response);
         when(submissionMapper.toEntity(any(SubmissionRequestDto.class))).thenReturn(submission);
         when(submissionRepository.save(any(Submission.class))).thenReturn(savedSubmission);
@@ -123,4 +135,3 @@ class SubmissionServiceImplTest {
         verify(memberRepository).findById(memberId);
     }
 }
- 

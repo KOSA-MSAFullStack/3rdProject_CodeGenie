@@ -12,6 +12,7 @@
 package com.codegenie.submission.service;
 
 import com.codegenie.workbook.entity.CodingQuiz;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.codegenie.workbook.repository.CodingQuizRepository;
 import com.codegenie.submission.mapper.SubmissionMapper;
 import com.codegenie.member.entity.MemberEntity;
@@ -33,17 +34,20 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import lombok.extern.slf4j.Slf4j;
 
 // * author: 김기성
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class SubmissionServiceImpl implements SubmissionService {
 
     private final SubmissionRepository submissionRepository;
     private final MemberRepository memberRepository;
     private final CodingQuizRepository codingQuizRepository;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
     private final SubmissionMapper submissionMapper;    // (1) Mapper 주입
 
     @Value("${judge0.api.url}")
@@ -70,20 +74,27 @@ public class SubmissionServiceImpl implements SubmissionService {
         Judge0RequestDto judge0Request = new Judge0RequestDto(requestDto.getAnswer(), languageId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Judge0RequestDto> requestEntity = new HttpEntity<>(judge0Request, headers);
 
-        // 4. Judge0 API 호출
+        // 4. Judge0 API 호출 (RestTemplate 내부 직렬화 문제 우회를 위해 수동으로 JSON 변환)
         Judge0ResponseDto judge0Response;
         try {
+            String jsonPayload = objectMapper.writeValueAsString(judge0Request);
+            log.info("Judge0 API 요청 페이로드: {}", jsonPayload);
+
+            HttpEntity<String> requestEntity = new HttpEntity<>(jsonPayload, headers);
+
             judge0Response = restTemplate.postForObject(judge0ApiUrl, requestEntity, Judge0ResponseDto.class);
+            log.info("Judge0 API 응답: {}", judge0Response); // Judge0 응답 로깅
             if (judge0Response == null) {
                 throw new IllegalStateException("Judge0으로부터 응답을 받지 못했습니다.");
             }
         } catch (HttpClientErrorException e) {
             // 4xx, 5xx 같은 HTTP 에러 응답을 받은 경우
+            log.error("채점 서버 요청 실패: {}, 응답 본문: {}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new IllegalStateException("채점 서버가 요청을 처리하는 중 오류를 반환했습니다: " + e.getResponseBodyAsString(), e);
         } catch (Exception e) {
             // 네트워크 연결 실패 등 RestTemplate 호출의 근본적인 문제
+            log.error("채점 서버 연결 또는 JSON 처리 실패", e);
             throw new IllegalStateException("채점 서버에 연결할 수 없습니다. Docker가 실행 중인지, 네트워크 설정을 확인해주세요.", e);
         }
 
@@ -92,7 +103,15 @@ public class SubmissionServiceImpl implements SubmissionService {
         submission.setMember(member);
         submission.setCodingQuiz(codingQuiz); // 문제 연결
 
-        submission.setStatus(judge0Response.getStatus().getDescription());
+        // Judge0 응답 상태 확인 및 설정
+        String submissionStatus = "Internal Error"; // 기본값
+        if (judge0Response.getStatus() != null) {
+            submissionStatus = judge0Response.getStatus().getDescription();
+            log.info("Judge0 응답 상태: {}", submissionStatus);
+        } else {
+            log.warn("Judge0 응답에 상태 정보가 없습니다. Judge0ResponseDto: {}", judge0Response);
+        }
+        submission.setStatus(submissionStatus);
         submission.setRunTime(judge0Response.getTime());
         submission.setMemory(judge0Response.getMemory());
 

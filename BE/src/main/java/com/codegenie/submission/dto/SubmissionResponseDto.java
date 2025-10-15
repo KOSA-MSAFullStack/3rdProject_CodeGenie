@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 public class SubmissionResponseDto {
     private Integer submissionId;       // 제출 ID (PK)
     private Integer quizId;             // 문제 ID (FK)
+    private Integer memberId;           // 회원 ID (FK)
     private String answer;              // 제출된 소스 코드
     private String language;            // 사용 언어
     private String status;              // 채점 상태
