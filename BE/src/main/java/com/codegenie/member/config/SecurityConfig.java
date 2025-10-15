@@ -11,14 +11,15 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 
 import com.codegenie.member.jwt.JWTFilter;
 import com.codegenie.member.jwt.JWTUtil;
 import com.codegenie.member.jwt.LoginFilter;
 import com.codegenie.member.service.CustomUserDetailsService;
+import com.codegenie.member.service.RefreshTokenService;
 
 @Configuration
 @EnableWebSecurity
@@ -36,12 +37,30 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 
+    // ✅ LoginFilter Bean 등록 (생성자 주입 방식 유지)
+    @Bean
+    public LoginFilter loginFilter(AuthenticationManager authenticationManager,
+                                   JWTUtil jwtUtil,
+                                   RefreshTokenService refreshTokenService) {
+        LoginFilter filter = new LoginFilter(authenticationManager, jwtUtil, refreshTokenService);
+        filter.setFilterProcessesUrl("/api/login");
+        return filter;
+    }
+
+    // ✅ JWTFilter Bean 등록
+    @Bean
+    public JWTFilter jwtFilter(JWTUtil jwtUtil,
+                               CustomUserDetailsService userDetailsService,
+                               RefreshTokenService refreshTokenService) {
+        return new JWTFilter(jwtUtil, userDetailsService, refreshTokenService);
+    }
+    
+    
     // SecurityFilterChain
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           AuthenticationManager authenticationManager,
-                                           JWTUtil jwtUtil,
-                                           CustomUserDetailsService userDetailsService) throws Exception {
+    										LoginFilter loginFilter,
+    										JWTFilter jwtFilter) throws Exception {
 
         // 기본 설정
         http.csrf(csrf -> csrf.disable());
@@ -51,7 +70,7 @@ public class SecurityConfig {
         // ✅ 인가 설정 (기존 + /error, OPTIONS 허용 추가)
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // 프리플라이트 허용
-                .requestMatchers("/", "/api/join", "/api/login", "/error").permitAll() // /error 허용 추가
+                .requestMatchers("/", "/api/join", "/api/login", "/api/reissue", "/error").permitAll() // /error 허용 추가
                 .anyRequest().authenticated()
         );
 
@@ -61,12 +80,12 @@ public class SecurityConfig {
                 .accessDeniedHandler(new AccessDeniedHandlerImpl()) // 권한 없음 → 403
         );
 
-        // 커스텀 로그인 필터 (JWT 발급)
-        LoginFilter loginFilter = new LoginFilter(authenticationManager, jwtUtil);
-        loginFilter.setFilterProcessesUrl("/api/login"); // 로그인 URL 명시
-
-        // JWT 검증 필터 (모든 요청 검증)
-        JWTFilter jwtFilter = new JWTFilter(jwtUtil, userDetailsService);
+//        // 커스텀 로그인 필터 (JWT 발급)
+//        LoginFilter loginFilter = new LoginFilter(authenticationManager, jwtUtil);
+//        loginFilter.setFilterProcessesUrl("/api/login"); // 로그인 URL 명시
+//
+//        // JWT 검증 필터 (모든 요청 검증)
+//        JWTFilter jwtFilter = new JWTFilter(jwtUtil, userDetailsService);
 
         // 필터 체인에 순서대로 등록
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

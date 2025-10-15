@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.codegenie.member.service.RefreshTokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.FilterChain;
@@ -19,11 +20,16 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authenticationManager;
     private final JWTUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService; 
 
-    public LoginFilter(AuthenticationManager authenticationManager, JWTUtil jwtUtil) {
+    public LoginFilter(AuthenticationManager authenticationManager, 
+    					JWTUtil jwtUtil,
+    					RefreshTokenService refreshTokenService) {
+    	super(authenticationManager); 
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
-        setFilterProcessesUrl("/api/login"); // 경로 명시 (필수)
+		this.refreshTokenService = refreshTokenService;
+        setFilterProcessesUrl("/api/login"); // 경로 명시 
     }
 
     // JSON 요청 파싱
@@ -63,15 +69,30 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
             FilterChain chain,
             Authentication authentication
     ) throws IOException, ServletException {
+    	
+    	System.out.println("로그인 성공: " + authentication.getName());
 
-        System.out.println("로그인 성공: " + authentication.getName());
+    	String email = authentication.getName();
 
-        // JWT 발급 로직
-        String token = jwtUtil.createJwt(authentication.getName(), 60 * 60 * 1000L); // 1시간
+    	
+    	// JWT 발급 로직
+        // Access Token (1시간)
+        String accessToken = jwtUtil.createJwt(email, 60 * 60 * 1000L);
 
-        // Authorization 헤더에 추가
-        response.addHeader("Authorization", "Bearer " + token);
+        // Refresh Token (2주)
+        String refreshToken = jwtUtil.createJwt(email, 14 * 24 * 60 * 60 * 1000L);
+
+        // DB 저장 (만료는 서비스에서 plusSeconds 등으로 처리)
+
+        refreshTokenService.saveToken(email, refreshToken, 14L * 24 * 60 * 60 * 1000L);
+
+
+        // Authorization 응답 헤더에 추가
+        response.addHeader("Authorization", "Bearer " + accessToken);
+        response.addHeader("Set-Cookie", "refresh=" + refreshToken + "; HttpOnly; Path=/; Max-Age=" + 14 * 24 * 60 * 60);
+
         response.setStatus(HttpServletResponse.SC_OK);
+        
     }
 
     // 로그인 실패 시

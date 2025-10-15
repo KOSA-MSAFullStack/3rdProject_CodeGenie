@@ -9,6 +9,8 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 
 @Component
@@ -23,7 +25,7 @@ public class JWTUtil {
         );
     }
 
-    // ✅ email 기준으로 JWT 발급
+    // email 기준으로 JWT 발급 (Access / Refresh 공용)
     public String createJwt(String email, Long expiredMs) {
         return Jwts.builder()
                 .claim("email", email)
@@ -33,7 +35,7 @@ public class JWTUtil {
                 .compact();
     }
 
-    // ✅ JWT에서 email 추출
+    // JWT에서 email 추출
     public String getEmail(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
@@ -43,14 +45,32 @@ public class JWTUtil {
                 .get("email", String.class);
     }
 
-    // ✅ 만료 여부 확인
+    // ✅ 만료 여부 확인 (예외 방지)
     public Boolean isExpired(String token) {
-        return Jwts.parser()
+        try {
+            Date exp = Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .getExpiration();
+            return exp.before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true;
+        } catch (JwtException e) {
+            return true;
+        }
+    }
+    // ✅ 토큰 검증 (서명 및 위조 확인)
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getExpiration()
-                .before(new Date());
+                .parseSignedClaims(token);
+            return true;
+        } catch (JwtException e) {
+            return false;
+        }
     }
 }
