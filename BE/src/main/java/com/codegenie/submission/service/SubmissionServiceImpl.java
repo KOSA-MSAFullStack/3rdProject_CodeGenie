@@ -11,6 +11,8 @@
 
 package com.codegenie.submission.service;
 
+import com.codegenie.workbook.entity.CodingQuiz;
+import com.codegenie.workbook.repository.CodingQuizRepository;
 import com.codegenie.submission.mapper.SubmissionMapper;
 import com.codegenie.member.entity.MemberEntity;
 import com.codegenie.member.repository.MemberRepository;
@@ -40,6 +42,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     private final SubmissionRepository submissionRepository;
     private final MemberRepository memberRepository;
+    private final CodingQuizRepository codingQuizRepository;
     private final RestTemplate restTemplate;
     private final SubmissionMapper submissionMapper;    // (1) Mapper 주입
 
@@ -54,9 +57,11 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     @Override
     public SubmissionResponseDto submitAnswer(SubmissionRequestDto requestDto, Integer memberId) {
-        // 1. 사용자 조회
+        // 1. 사용자 및 문제 조회
         MemberEntity member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NoSuchElementException("해당 사용자를 찾을 수 없습니다. ID: " + memberId));
+        CodingQuiz codingQuiz = codingQuizRepository.findById(requestDto.getQuizId())
+                .orElseThrow(() -> new NoSuchElementException("해당 문제를 찾을 수 없습니다. ID: " + requestDto.getQuizId()));
 
         // 2. 언어 ID 조회
         int languageId = getLanguageId(requestDto.getLanguage());
@@ -75,14 +80,18 @@ public class SubmissionServiceImpl implements SubmissionService {
                 throw new IllegalStateException("Judge0으로부터 응답을 받지 못했습니다.");
             }
         } catch (HttpClientErrorException e) {
-            // Judge0 API 호출 중 에러 발생 시
-            throw new IllegalStateException("채점 서버 호출에 실패했습니다: " + e.getResponseBodyAsString(), e);
+            // 4xx, 5xx 같은 HTTP 에러 응답을 받은 경우
+            throw new IllegalStateException("채점 서버가 요청을 처리하는 중 오류를 반환했습니다: " + e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            // 네트워크 연결 실패 등 RestTemplate 호출의 근본적인 문제
+            throw new IllegalStateException("채점 서버에 연결할 수 없습니다. Docker가 실행 중인지, 네트워크 설정을 확인해주세요.", e);
         }
 
         // 5. 제출 기록 생성 및 저장
         Submission submission = submissionMapper.toEntity(requestDto);      // (2) DTO -> Entity 변환
-        
         submission.setMember(member);
+        submission.setCodingQuiz(codingQuiz); // 문제 연결
+
         submission.setStatus(judge0Response.getStatus().getDescription());
         submission.setRunTime(judge0Response.getTime());
         submission.setMemory(judge0Response.getMemory());
