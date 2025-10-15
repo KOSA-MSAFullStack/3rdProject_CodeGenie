@@ -48,6 +48,8 @@ const password = ref("");
 
 const handleLogin = async () => {
   await signIn(email.value, password.value);
+  // 로그인 상태 변경 알림 (Sidebar에서 감지)
+  window.dispatchEvent(new Event('auth:changed'));
   router.push("/new");
 };
 </script>
