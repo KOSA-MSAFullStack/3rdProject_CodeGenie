@@ -2,6 +2,8 @@ package com.codegenie.member.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -9,7 +11,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 
 import com.codegenie.member.jwt.JWTFilter;
 import com.codegenie.member.jwt.JWTUtil;
@@ -44,10 +48,17 @@ public class SecurityConfig {
         http.formLogin(form -> form.disable());
         http.httpBasic(basic -> basic.disable());
 
-        // 인가 설정
+        // ✅ 인가 설정 (기존 + /error, OPTIONS 허용 추가)
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/api/join", "/api/login").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // 프리플라이트 허용
+                .requestMatchers("/", "/api/join", "/api/login", "/error").permitAll() // /error 허용 추가
                 .anyRequest().authenticated()
+        );
+
+        // ✅ 예외 처리 명시 (401/403 구분)
+        http.exceptionHandling(ex -> ex
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)) // 인증 실패 → 401
+                .accessDeniedHandler(new AccessDeniedHandlerImpl()) // 권한 없음 → 403
         );
 
         // 커스텀 로그인 필터 (JWT 발급)
@@ -64,7 +75,7 @@ public class SecurityConfig {
         // CORS 허용 (Authorization 헤더용)
         http.cors(cors -> cors.configurationSource(request -> {
             var config = new org.springframework.web.cors.CorsConfiguration();
-            config.setAllowedOrigins(java.util.List.of("http://localhost:5173")); 
+            config.setAllowedOrigins(java.util.List.of("http://localhost:5173"));
             config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
             config.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type"));
             config.setExposedHeaders(java.util.List.of("Authorization"));

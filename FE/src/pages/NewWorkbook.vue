@@ -54,9 +54,10 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import api from "../lib/api";
+
+import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import authApi from '../lib/authApi'
 
 const router = useRouter();
 const loading = ref(false);
@@ -70,14 +71,30 @@ const form = reactive({
 
 async function create() {
   try {
-    loading.value = true;
-    const { data } = await api.post("/workbooks", { ...form });
-    const id = data?.id;
-    if (!id) throw new Error("응답에 id 없음");
-    router.push(`/workbooks/${id}`);
+    loading.value = true
+    // ✅ 서버 DTO 키(camelCase)로 명시 매핑
+    const payload = {
+      language: form.language,
+      level: form.level,
+      style: form.style,
+      requestDetail: form.request_detail, // ← 백엔드와 일치
+      topic: form.topic,
+    }
+    const { data } = await authApi.post('/workbooks', payload)
+    const id = data?.id
+    if (!id) throw new Error('응답에 id 없음')
+
+    // ✅ 사이드바 갱신 이벤트 (라우터 이동보다 먼저)
+    window.dispatchEvent(
+      new CustomEvent('workbook:created', {
+        detail: { id, topic: form.topic || data.topic || '' },
+      })
+    )
+
+    router.push(`/workbooks/${id}`)
   } catch (e) {
-    console.warn("임시 폴백 사용:", e);
-    router.push("/workbooks/1");
+    console.error('문제집 생성 실패:', e)
+    alert('문제집 생성에 실패했습니다. 잠시 후 다시 시도하거나 콘솔을 확인하세요.')
   } finally {
     loading.value = false;
   }

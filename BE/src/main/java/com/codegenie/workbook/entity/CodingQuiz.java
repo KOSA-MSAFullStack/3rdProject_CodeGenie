@@ -3,35 +3,33 @@ package com.codegenie.workbook.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Entity @Getter @Setter
+@Entity
+@Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
 @Table(name = "coding_quizzes")
 public class CodingQuiz {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "quiz_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "workbook_id")
+    @JoinColumn(name = "workbook_id", nullable = false)
     private Workbook workbook;
 
-    private Integer orderNo;            // 1..10
-    private String qname;               // 문제 1..10
+    @Lob
+    @Column(name = "quiz", nullable = false, columnDefinition = "TEXT")
+    private String quiz;
 
-    @Column(columnDefinition = "TEXT")
-    private String statement;
-    @Column(columnDefinition = "TEXT")
-    private String inputText;
-    @Column(columnDefinition = "TEXT")
-    private String outputText;
-    @Column(columnDefinition = "TEXT")
-    private String sampleInput;
+    @Lob
+    @Column(name = "explanation", columnDefinition = "TEXT")
+    private String explanation;
 
-    @Column(columnDefinition = "TEXT")
-    private String explanation;         // 해설
-    @Column(columnDefinition = "TEXT")
-    private String concept;             // 개념 요약
+    @Lob
+    @Column(name = "concept", columnDefinition = "TEXT")
+    private String concept;
 
-    private Long submissions;           // 제출 수
-    private Long accepted;              // 정답 수
+    @Column(name = "is_saved", nullable = false)
+    private Boolean isSaved = Boolean.FALSE;
 }

@@ -1,13 +1,21 @@
 package com.codegenie.workbook.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter @Setter
+@NoArgsConstructor
 public class CreateWorkbookRequest {
-    private String language;         // 필수
-    private String level;            // 초급/중급/고급
-    private String style;            // 간단요약/깊이설명/예시중심
-    private String requestDetail;    // 옵션
-    private String topic;            // 학습 주제명(제목)
+
+    private String language;
+    private String level;
+    private String style;
+
+    // 프론트: request_detail, 백: requestDetail
+    @JsonProperty("request_detail")
+    private String requestDetail;
+
+    private String topic;
 }

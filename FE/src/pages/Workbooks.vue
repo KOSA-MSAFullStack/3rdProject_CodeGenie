@@ -39,7 +39,6 @@
           <section class="block"><h4>출력</h4><p>{{ cur.output }}</p></section>
 
           <section class="block">
-            <!-- ✅ “예제 입력 1” → “예제 입력” -->
             <h4>예제 입력</h4>
             <textarea class="io" readonly>{{ cur.sampleInput }}</textarea>
           </section>
@@ -120,9 +119,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import api from '../lib/api'
+import authApi from '../lib/authApi'
 import SubmissionEditor from '../components/SubmissionEditor.vue'
 
 const route = useRoute()
@@ -156,27 +155,29 @@ function closeQna(){ showQna.value = false }
 
 onMounted(load)
 
+/** 🔁 id가 바뀌면 다시 로드 (같은 컴포넌트 재사용 시 필수) */
+watch(() => route.params.id, () => {
+  // 뷰 상태 초기화
+  index.value = 0
+  tab.value = 'quiz'
+  showExplain.value = false
+  showConcept.value = false
+  showQna.value = false
+  load()
+})
+
 async function load() {
   loading.value = true
   try {
-    const { data: wb } = await api.get(`/workbooks/${id.value}`)
+    const { data: wb } = await authApi.get(`/workbooks/${id.value}`)
     form.value = wb
-    const { data: list } = await api.get(`/workbooks/${id.value}/quizzes`)
-    problems.value = list
+    const { data: list } = await authApi.get(`/workbooks/${id.value}/quizzes`)
+    problems.value = Array.isArray(list) ? list : []
   } catch (e) {
-    // 임시 더미
-    form.value = { language: 'Java', level: '초급', style: '간단요약', topic: 'Java에 관한 문제', request_detail: '예시 요청 상세입니다.' }
-    problems.value = Array.from({ length: 10 }).map((_, i) => ({
-      id: i + 1,
-      qname: `문제 ${i + 1}`,
-      spec: { submissions: 1341020, accepted: 522888 },
-      statement: '두 정수 A와 B를 입력받아 A+B를 출력하세요.',
-      input: '첫째 줄에 A와 B가 주어진다. (0 < A, B < 10)',
-      output: '첫째 줄에 A+B를 출력한다.',
-      sampleInput: '1 2',
-      explanation: '표준 입력을 읽고 합을 출력합니다.\n- 입력 파싱\n- 정수 덧셈\n- 출력',
-      concept: '표준입출력, 자료형, 연산자',
-    }))
+    console.error('문제집 로드 실패:', e)
+    alert('문제집을 불러오지 못했습니다. 잠시 후 다시 시도하세요.')
+    form.value = null
+    problems.value = []
   } finally {
     loading.value = false
   }
