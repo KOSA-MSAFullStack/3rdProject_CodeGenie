@@ -12,7 +12,7 @@ public class CodingQuiz {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "quiz_id")
-    private Long id;
+    private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workbook_id", nullable = false)
@@ -30,6 +30,7 @@ public class CodingQuiz {
     @Column(name = "concept", columnDefinition = "TEXT")
     private String concept;
 
+    @Builder.Default
     @Column(name = "is_saved", nullable = false)
     private Boolean isSaved = Boolean.FALSE;
 }

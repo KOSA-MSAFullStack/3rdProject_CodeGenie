@@ -16,7 +16,7 @@ public class Workbook {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "workbook_id")
-    private Long id;
+    private Integer id;
 
     // ✅ FK: members(member_id)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -40,6 +40,7 @@ public class Workbook {
     @Column(name = "topic", nullable = false)
     private String topic;
 
+    @Builder.Default
     @Column(name = "is_upload", nullable = false)
     private Boolean isUpload = Boolean.FALSE;
 }

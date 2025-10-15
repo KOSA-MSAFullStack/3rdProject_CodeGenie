@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuizView {
-    private Long id;
+    private Integer id;
     private String statement;
     private String input;
     private String output;

@@ -7,10 +7,10 @@ import lombok.Getter;
 @Getter
 @Builder
 public class QuizResponse {
-    private Long id;
+    private Integer id;
 
     @JsonProperty("workbook_id")
-    private Long workbookId;
+    private Integer workbookId;
 
     private String quiz;
     private String explanation;
