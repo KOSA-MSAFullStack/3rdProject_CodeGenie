@@ -5,8 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface CodingQuizRepository extends JpaRepository<CodingQuiz, Long> {
+public interface CodingQuizRepository extends JpaRepository<CodingQuiz, Integer> {
 
     // ✅ coding_quizzes 테이블에 orderNo 컬럼이 없으므로 id 기준 정렬
-    List<CodingQuiz> findByWorkbookIdOrderByIdAsc(Long workbookId);
+    List<CodingQuiz> findByWorkbookIdOrderByIdAsc(Integer workbookId);
 }

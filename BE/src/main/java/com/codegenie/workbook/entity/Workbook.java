@@ -16,7 +16,7 @@ public class Workbook {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "workbook_id")
-    private Long id;
+    private Integer id;
 
     // ✅ FK: members(member_id)
     @ManyToOne(fetch = FetchType.LAZY)

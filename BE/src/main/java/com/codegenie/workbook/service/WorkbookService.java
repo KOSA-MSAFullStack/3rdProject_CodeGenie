@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface WorkbookService {
     WorkbookResponse create(CreateWorkbookRequest req);
-    WorkbookResponse getOneDto(Long id);
-    List<QuizView> getQuizzes(Long workbookId);
+    WorkbookResponse getOneDto(Integer id);
+    List<QuizView> getQuizzes(Integer workbookId);
     List<WorkbookResponse> getRecent(int limit);
 }
