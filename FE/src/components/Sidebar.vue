@@ -53,94 +53,51 @@ const workbooks = ref([])
 
 /** 최대 항목 수 */
 const MAX_ITEMS = 20
-const STORAGE_KEY = 'cg:sidebar:workbooks'
 
 /** 활성 탭 체크 */
 function isActive(prefix) {
   return route.path.startsWith(prefix)
 }
 
-/** 중복 제거 + 순서 유지(upsert 유틸) */
+/** 중복 제거 + 순서 유지 */
 function dedupKeepOrder(arr) {
   const seen = new Set()
   const out = []
   for (const x of arr) {
-    if (!x) continue
-    // id 타입 정규화(문자/숫자 섞여도 동일 취급)
-    const key = Number.isNaN(Number(x.id)) ? String(x.id) : String(Number(x.id))
-    if (!seen.has(key)) {
-      seen.add(key)
-      out.push({ id: key, topic: x.topic ?? '' })
+    if (x && !seen.has(x.id)) {
+      seen.add(x.id)
+      out.push(x)
     }
   }
   return out
 }
 
-/** 저장/불러오기 */
-function loadFromStorage() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? dedupKeepOrder(parsed).slice(0, MAX_ITEMS) : []
-  } catch {
-    return []
-  }
-}
-function saveToStorage(list) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dedupKeepOrder(list).slice(0, MAX_ITEMS)))
-  } catch {}
-}
-
-/** 최근 목록 + 현재 상세 항목까지 '병합' 로드 (덮어쓰기 금지) */
+/** 최근 목록을 서버에서 가져와 기존 목록과 병합 (현재 상세를 맨 위로 올리지 않음) */
 async function loadWorkbooks() {
   try {
     const token = localStorage.getItem('token')
     if (!token) return
 
-    // 최근 N개 요청
-    const listReq = authApi.get(`/workbooks?limit=${MAX_ITEMS}&sort=recent`)
-
-    // 현재 상세라면 우선 포함
-    const match = route.path.match(/^\/workbooks\/(\d+)/)
-    let current = null
-    if (match) {
-      const id = match[1]
-      const { data } = await authApi.get(`/workbooks/${id}`)
-      current = { id: String(data.id), topic: data.topic ?? data.title ?? '' }
-    }
-
-    const { data: recent } = await listReq
+    const { data: recent } = await authApi.get('/workbooks?limit=10&sort=recent')
     const recentArr = Array.isArray(recent) ? recent : (recent ? [recent] : [])
-    const mapped = recentArr.map(x => ({ id: String(x.id), topic: x.topic ?? x.title ?? '' }))
+    const mapped = recentArr.map(x => ({ id: x.id, topic: x.topic ?? x.title ?? '' }))
 
-    // 1) 서버에서 받은 목록(현재 항목 포함) 우선
-    const incoming = dedupKeepOrder(current ? [current, ...mapped] : mapped)
-
-    // 2) 기존(메모리 + localStorage) 병합
-    const persisted = loadFromStorage()
-    const merged = dedupKeepOrder([...incoming, ...workbooks.value, ...persisted]).slice(0, MAX_ITEMS)
-
-    workbooks.value = merged
-    saveToStorage(merged)
+    // 서버 정렬(최근순)을 우선 유지하고, 기존 목록에서 빠진 것만 뒤에 붙임
+    const merged = dedupKeepOrder([...mapped, ...workbooks.value])
+    workbooks.value = merged.slice(0, MAX_ITEMS)
   } catch {
-    // 실패해도 기존 목록 유지 (덮어쓰기 방지)
+    // 실패해도 기존 목록 유지
   }
 }
 
-/** 새 문제집 생성 이벤트를 들으면 즉시 맨 위에 추가(덮어쓰기 X) */
+/** 새 문제집 생성 이벤트: 이 때만 맨 위에 올림 */
 function onWorkbookCreated(e) {
   const { id, topic } = e.detail || {}
   if (!id) return
-  const next = dedupKeepOrder([{ id: String(id), topic: topic ?? '' }, ...workbooks.value]).slice(0, MAX_ITEMS)
-  workbooks.value = next
-  saveToStorage(next)
+  workbooks.value = dedupKeepOrder([{ id, topic: topic ?? '' }, ...workbooks.value]).slice(0, MAX_ITEMS)
 }
 
 onMounted(() => {
-  // localStorage 먼저 복원 → 서버 합치기
-  workbooks.value = loadFromStorage()
   loadWorkbooks()
   window.addEventListener('workbook:created', onWorkbookCreated)
 })
@@ -149,13 +106,8 @@ onUnmounted(() => {
   window.removeEventListener('workbook:created', onWorkbookCreated)
 })
 
-/** 라우트 변경 시 재조회(병합) */
-watch(() => route.fullPath, () => {
-  loadWorkbooks()
-})
-
-// workbooks 변경 시 자동 저장(안전망)
-watch(workbooks, (v) => saveToStorage(v), { deep: true })
+/** 라우트가 바뀌면 다시 조회(정렬 유지, 승격 없음) */
+watch(() => route.fullPath, loadWorkbooks)
 </script>
 
 <style scoped>
