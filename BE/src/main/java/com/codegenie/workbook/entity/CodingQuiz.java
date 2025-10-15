@@ -30,6 +30,7 @@ public class CodingQuiz {
     @Column(name = "concept", columnDefinition = "TEXT")
     private String concept;
 
+    @Builder.Default
     @Column(name = "is_saved", nullable = false)
     private Boolean isSaved = Boolean.FALSE;
 }

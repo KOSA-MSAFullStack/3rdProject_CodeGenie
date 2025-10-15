@@ -40,6 +40,7 @@ public class Workbook {
     @Column(name = "topic", nullable = false)
     private String topic;
 
+    @Builder.Default
     @Column(name = "is_upload", nullable = false)
     private Boolean isUpload = Boolean.FALSE;
 }
