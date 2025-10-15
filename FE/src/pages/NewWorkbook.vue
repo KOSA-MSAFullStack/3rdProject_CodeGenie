@@ -48,6 +48,12 @@
         <button type="submit" class="workbook-button" :disabled="loading">
           {{ loading ? '생성 중...' : '문제집 생성' }}
         </button>
+
+        <!-- ✅ 로딩 GIF 표시 -->
+        <div v-if="loading" class="loading-box">
+          <img src="@/assets/loadingGenie.gif" alt="loading..." class="loading-gif" />
+          <p>지니가 문제를 생성 중입니다</p>
+        </div>
       </form>
     </div>
   </div>
@@ -228,4 +234,33 @@ async function create() {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* === 로딩 오버레이 === */
+.loading-box {
+  position: fixed; /* 화면 전체 기준 */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.8); /* 살짝 반투명 배경 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* ✅ 수직 + 수평 중앙 정렬 */
+  z-index: 9999; /* 폼보다 위로 */
+}
+
+.loading-gif {
+  width: 700px;
+  height: 700px;
+  margin-bottom: 10px;
+}
+
+.loading-box p {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+}
+
+
 </style>
