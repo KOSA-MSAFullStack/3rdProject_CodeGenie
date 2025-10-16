@@ -89,7 +89,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
         // Authorization 응답 헤더에 추가
         response.addHeader("Authorization", "Bearer " + accessToken);
-        response.addHeader("Set-Cookie", "refresh=" + refreshToken + "; HttpOnly; Path=/; Max-Age=" + 14 * 24 * 60 * 60);
+        response.addHeader("Set-Cookie", "refresh=" + refreshToken + "; HttpOnly; Path=/; Max-Age=" + 14 * 24 * 60 * 60 + "; SameSite=Lax");
 
         response.setStatus(HttpServletResponse.SC_OK);
         

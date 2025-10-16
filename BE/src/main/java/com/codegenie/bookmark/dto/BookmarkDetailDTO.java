@@ -6,7 +6,7 @@
  * - '저장한 문제' 탭에서 사용됨
  *
  * 주요 기능:
- * - 퀴즈 정보와 마지막 제출 기록을 클라이언트로 전달
+ * - 퀴즈 정보와 마지막 제출 기록 클라이언트로 전달
  */
 package com.codegenie.bookmark.dto;
 
@@ -15,9 +15,10 @@ import com.codegenie.workbook.dto.QuizResponse;
 import lombok.Builder;
 import lombok.Getter;
 
+// * author: 김기성
 @Getter
 @Builder
 public class BookmarkDetailDTO {
-    private QuizResponse quiz;
-    private SubmissionResponseDto lastSubmission; // Can be null
+    private QuizResponse quiz;                      // 북마크된 문제 정보
+    private SubmissionResponseDto lastSubmission;   // 해당 문제에 대한 사용자의 마지막 제출 기록 (없을 경우 null)
 }

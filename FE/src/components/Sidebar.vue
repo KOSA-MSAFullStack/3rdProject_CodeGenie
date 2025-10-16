@@ -30,7 +30,17 @@
 
       <div class="section">
         <div class="section-title">저장한 문제</div>
-        <div class="sublist"></div>
+        <div class="sublist">
+          <RouterLink
+            v-for="topic in bookmarkedTopics"
+            :key="topic"
+            :to="`/bookmarks?topic=${topic}`"
+            class="subitem"
+            :class="{active: route.query.topic === topic}"
+          >
+            {{ topic }}
+          </RouterLink>
+        </div>
       </div>
     </nav>
 
@@ -70,6 +80,8 @@ const showMenu = ref(false);
 /** 여러 개를 보여줄 문제집 리스트 */
 const workbooks = ref([])
 
+const bookmarkedTopics = ref([]) // New ref for bookmarked topics
+
 /** 최대 항목 수 */
 const MAX_ITEMS = 20
 
@@ -106,6 +118,21 @@ async function loadWorkbooks() {
     workbooks.value = merged.slice(0, MAX_ITEMS)
   } catch {
     // 실패해도 기존 목록 유지
+  }
+}
+
+async function loadBookmarkedTopics() {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      bookmarkedTopics.value = []
+      return
+    }
+    const { data } = await authApi.get('/bookmarks/bookmarked-topics')
+    bookmarkedTopics.value = Array.isArray(data) ? data : []
+  } catch (e) {
+    console.error('Failed to load bookmarked topics:', e)
+    bookmarkedTopics.value = []
   }
 }
 
@@ -160,19 +187,29 @@ function handleClickOutside(e) {
 onMounted(() => {
   loadWorkbooks();
   loadMemberInfo();
+  loadBookmarkedTopics(); // Load bookmarked topics on mount
   window.addEventListener("workbook:created", loadWorkbooks);
-  window.addEventListener("auth:changed", loadMemberInfo);
+  window.addEventListener("auth:changed", () => {
+    loadMemberInfo();
+    loadBookmarkedTopics(); // Reload topics on auth change
+  });
   document.addEventListener("click", handleClickOutside);
 });
 
 onUnmounted(() => {
   window.removeEventListener("workbook:created", loadWorkbooks);
-  window.removeEventListener("auth:changed", loadMemberInfo);
+  window.removeEventListener("auth:changed", () => {
+    // No need to remove specific listener for auth:changed if it's a simple function
+  });
   document.removeEventListener("click", handleClickOutside);
 });
 
 /** 라우트가 바뀌면 다시 조회(정렬 유지, 승격 없음) */
-watch(() => route.fullPath, loadWorkbooks)
+watch(() => route.fullPath, () => {
+  loadWorkbooks();
+  // No need to reload bookmarked topics here, as they are static for the sidebar
+  // unless a bookmark is added/removed, which would trigger auth:changed
+});
 </script>
 
 <style scoped>
@@ -223,7 +260,7 @@ nav {
   padding: 8px 16px 4px 16px;
 }
 .sublist {
-  display: flex;
+  display: flex !important;
   flex-direction: column;
   gap: 2px;
   padding: 2px 8px 10px 8px;
