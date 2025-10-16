@@ -61,6 +61,11 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     @Override
     public SubmissionResponseDto submitAnswer(SubmissionRequestDto requestDto, Integer memberId) {
+        // 0) 입력 유효성 검증: quizId 필수
+        if (requestDto.getQuizId() == null) {
+            throw new IllegalArgumentException("quizId는 필수입니다.");
+        }
+
         // 1. 사용자 및 문제 조회
         MemberEntity member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NoSuchElementException("해당 사용자를 찾을 수 없습니다. ID: " + memberId));
@@ -115,14 +120,20 @@ public class SubmissionServiceImpl implements SubmissionService {
         submission.setRunTime(judge0Response.getTime());
         submission.setMemory(judge0Response.getMemory());
 
-        // Judge0 결과에 따라 stdout 또는 stderr/compile_output 저장
-        if (judge0Response.getStatus().getId() <= 2) { // In Queue or Processing
-            submission.setStdout("채점 중입니다...");
-        } else if (judge0Response.getStatus().getId() == 6) { // Compilation Error
-            submission.setStderr(judge0Response.getCompileOutput());
-        } else {
+        // Judge0 결과에 따라 stdout 또는 stderr/compile_output 저장 (status null 안전 처리)
+        if (judge0Response.getStatus() == null) {
             submission.setStdout(judge0Response.getStdout());
             submission.setStderr(judge0Response.getStderr());
+        } else {
+            int statusId = judge0Response.getStatus().getId();
+            if (statusId <= 2) { // In Queue or Processing
+                submission.setStdout("채점 중입니다...");
+            } else if (statusId == 6) { // Compilation Error
+                submission.setStderr(judge0Response.getCompileOutput());
+            } else {
+                submission.setStdout(judge0Response.getStdout());
+                submission.setStderr(judge0Response.getStderr());
+            }
         }
 
         Submission savedSubmission = submissionRepository.save(submission);     // (3) DB에 저장

@@ -31,5 +31,6 @@ public interface SubmissionMapper {
 
     // Submission 엔티티를 SubmissionResponseDto로 변환
     @Mapping(source = "member.member_id", target = "memberId")
+    @Mapping(source = "codingQuiz.id", target = "quizId")
     SubmissionResponseDto toDto(Submission entity);
 }
