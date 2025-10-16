@@ -34,15 +34,15 @@
       </div>
     </nav>
 
-     <!-- ✅ 사용자 정보 / 프로필 -->
+     <!-- 사용자 정보 / 프로필 -->
     <div class="profile-wrapper">
       <div class="profile" @click="toggleMenu" title="내 계정">
-        <span class="avatar">👤</span>
+        <img class="avatar-img" :src="genieProfile" alt="Profile" />
         <span v-if="username">{{ username }}</span>
         <span v-else>Welcome!</span>
       </div>
 
-      <!-- ✅ 드롭다운 메뉴 -->
+      <!-- 드롭다운 메뉴 -->
       <transition name="fade">
         <div v-if="showMenu" class="dropdown" @click.stop>
           <RouterLink to="/mypage" class="dropdown-item">마이페이지</RouterLink>
@@ -58,13 +58,14 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router' 
 import authApi from '../lib/authApi'
 import logo from '../assets/logo.png'
+import genieProfile from '../assets/profileGenie.png'
 import { useAuth } from "@/composables/useAuth";
 
 const route = useRoute()
 const router = useRouter()
 const { signOut } = useAuth()
 
-const username = ref('') // ✅ 사용자 이름
+const username = ref('') // 사용자 이름
 const showMenu = ref(false);
 
 /** 여러 개를 보여줄 문제집 리스트 */
@@ -248,7 +249,7 @@ nav {
   font-weight: 600;
 }
 
-/* ✅ 프로필 드롭다운 */
+/* 프로필 드롭다운 */
 .profile-wrapper {
   margin-top: auto;
   position: relative;
@@ -266,11 +267,25 @@ nav {
 .profile:hover {
   background: #f5f6f7;
 }
-.avatar {
-  font-size: 16px;
+
+.avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #fff;
+  border: 2px solid #e0e0e0;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* ✅ 드롭다운 */
+/* hover 시 약간 확대 + 살짝 회전 */
+.avatar-img:hover {
+  transform: scale(1.1) rotate(5deg);
+  animation: goldenGlow 1.5s infinite ease-in-out;
+}
+
+
+/* 드롭다운 */
 .dropdown {
   position: absolute;
   bottom: 55px;
