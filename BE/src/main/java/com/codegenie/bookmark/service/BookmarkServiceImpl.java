@@ -34,8 +34,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.Set; // New import
-import java.util.HashSet; // New import
 
 @Service
 @RequiredArgsConstructor
@@ -223,14 +221,13 @@ public class BookmarkServiceImpl implements BookmarkService {
         // 3. 저장된 퀴즈 목록 조회
         List<CodingQuiz> savedQuizzes = codingQuizRepository.findAllByWorkbookInAndIsSaved(workbooks, true);
 
-        // 4. 북마크된 퀴즈가 있는 문제집의 고유한 topic 추출
-        Set<String> uniqueTopics = new HashSet<>();
-        for (CodingQuiz quiz : savedQuizzes) {
-            if (quiz.getWorkbook() != null && quiz.getWorkbook().getTopic() != null && !quiz.getWorkbook().getTopic().isBlank()) {
-                uniqueTopics.add(quiz.getWorkbook().getTopic());
-            }
-        }
-
-        return new ArrayList<>(uniqueTopics);
+        // 4. 북마크된 퀴즈가 있는 문제집의 고유한 topic을 ID 내림차순으로 추출
+        return savedQuizzes.stream()
+                .map(CodingQuiz::getWorkbook)
+                .distinct()
+                .sorted((wb1, wb2) -> wb2.getId().compareTo(wb1.getId())) // ID 내림차순 정렬
+                .map(Workbook::getTopic)
+                .filter(topic -> topic != null && !topic.isBlank())
+                .collect(Collectors.toList());
     }
 }
