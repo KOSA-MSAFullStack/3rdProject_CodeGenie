@@ -40,9 +40,19 @@ public class WorkbookServiceImpl implements WorkbookService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // ✅ 추가: 현재 로그인 사용자를 얻는 헬퍼(아래 세 메서드에서만 사용)
+    private MemberEntity currentMember() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = (auth != null ? auth.getName() : null);
+        if (email == null) throw new IllegalStateException("로그인 정보가 없습니다.");
+        return memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다: " + email));
+    }
+
     @Override
     @Transactional
     public WorkbookResponse create(CreateWorkbookRequest req) {
+        // ⛳ 기존 로직 그대로 유지 (필요 최소 변경 원칙)
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = (auth != null ? auth.getName() : null);
         if (email == null) throw new IllegalStateException("로그인 정보가 없습니다.");
@@ -61,7 +71,6 @@ public class WorkbookServiceImpl implements WorkbookService {
                 .build();
         workbookRepository.save(wb);
 
-        // ===== 프롬프트 (요청사항 반영: 다양화 + 개념 서술형) =====
         String promptText = buildPrompt(req);
 
         List<AiQuizDTO> aiQuizzes = callOpenAiAndParse(promptText);
@@ -94,7 +103,7 @@ public class WorkbookServiceImpl implements WorkbookService {
                     .workbook(wb)
                     .quiz(quizBody)
                     .explanation(defaultIfBlank(q.explanation(), ""))
-                    .concept(defaultIfBlank(q.concept(), "")) // ← 서술형 텍스트 수신
+                    .concept(defaultIfBlank(q.concept(), ""))
                     .isSaved(Boolean.FALSE)
                     .build();
 
@@ -107,7 +116,9 @@ public class WorkbookServiceImpl implements WorkbookService {
     @Override
     @Transactional(readOnly = true)
     public WorkbookResponse getOneDto(Integer id) {
-        Workbook wb = workbookRepository.findById(id)
+        // ✅ 변경: 소유자 검증 포함
+        MemberEntity me = currentMember();
+        Workbook wb = workbookRepository.findByIdAndMember(id, me)
                 .orElseThrow(() -> new IllegalArgumentException("Workbook not found: " + id));
 
         List<CodingQuiz> quizzes = codingQuizRepository.findByWorkbookIdOrderByIdAsc(id);
@@ -119,6 +130,11 @@ public class WorkbookServiceImpl implements WorkbookService {
     @Override
     @Transactional(readOnly = true)
     public List<QuizView> getQuizzes(Integer workbookId) {
+        // ✅ 추가: 먼저 내 워크북인지 확인(아니면 404)
+        MemberEntity me = currentMember();
+        workbookRepository.findByIdAndMember(workbookId, me)
+                .orElseThrow(() -> new IllegalArgumentException("Workbook not found: " + workbookId));
+
         return codingQuizRepository.findByWorkbookIdOrderByIdAsc(workbookId)
                 .stream()
                 .map(this::toView)
@@ -128,9 +144,11 @@ public class WorkbookServiceImpl implements WorkbookService {
     @Override
     @Transactional(readOnly = true)
     public List<WorkbookResponse> getRecent(int limit) {
-        var all = workbookRepository.findAll();
-        all.sort((a, b) -> Integer.compare(b.getId(), a.getId()));
-        return all.stream()
+        // ❌ 기존: findAll() 후 정렬 → 전부 보임
+        // ✅ 변경: 로그인 사용자 소유만 최신순
+        MemberEntity me = currentMember();
+        List<Workbook> mine = workbookRepository.findByMemberOrderByIdDesc(me);
+        return mine.stream()
                 .limit(limit)
                 .map(wb -> toDto(wb, false, null))
                 .toList();
@@ -175,14 +193,14 @@ public class WorkbookServiceImpl implements WorkbookService {
                 .output(sec.output)
                 .sampleInput(sec.sample)
                 .explanation(defaultIfBlank(cq.getExplanation(), ""))
-                .concept(defaultIfBlank(cq.getConcept(), "")) // ← 서술형 그대로 노출
+                .concept(defaultIfBlank(cq.getConcept(), ""))
                 .spec(new QuizView.Spec(0L, 0L))
                 .build();
     }
 
-    /* ============================== 프롬프트 ============================== */
+    /* ============================== 프롬프트/AI 파싱 유틸 (원본 그대로) ============================== */
 
-    private String buildPrompt(CreateWorkbookRequest req) {
+    private String buildPrompt(CreateWorkbookRequest req) { /* 원문 그대로 */ 
         String level = nullSafe(req.getLevel());
         String style = nullSafe(req.getStyle());
         String language = nullSafe(req.getLanguage());
@@ -233,7 +251,6 @@ public class WorkbookServiceImpl implements WorkbookService {
                 """;
         };
 
-        // ★ 추가: 학습 다양화 규칙
         String diversify = """
             [학습 다양화 규칙]
             - 특정 하위 주제(예: 배열)가 언급되더라도 동일 하위 주제만 반복하지 말 것.
