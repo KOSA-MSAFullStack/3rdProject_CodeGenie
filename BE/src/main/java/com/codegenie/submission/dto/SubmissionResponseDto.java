@@ -10,6 +10,7 @@ package com.codegenie.submission.dto;
 
 import lombok.*;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 // * author: 김기성
 @Getter
@@ -27,7 +28,8 @@ public class SubmissionResponseDto {
     private String status;              // 채점 상태
     private String stdout;              // 표준 출력
     private String stderr;              // 표준 에러
-    private Double runTime;             // 실행 시간
+    @JsonProperty("time")
+    private Double runTime;             // 실행 시간 (FE 키: time)
     private Integer memory;             // 사용 메모리 (KB)
     private LocalDateTime submittedAt;  // 제출 시간
 }
