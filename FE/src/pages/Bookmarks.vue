@@ -23,7 +23,7 @@
         <!-- 문제 탭 -->
         <div v-if="tab === 'quiz' && cur" class="quiz-area">
           <div class="problem-header">
-            <span class="name">문제 {{ cur.problemNumber }}</span>
+            <span class="name">문제 {{ cur.quizNumber }}</span>
             <span class="badge">문제</span>
           </div>
 
@@ -132,7 +132,7 @@ const cur = computed(() => {
 
   return {
     id: originalProblem.quiz.id,
-    problemNumber: originalProblem.quiz.problemNumber,
+    problemNumber: originalProblem.quiz.quizNumber,
     statement: sections.statement,
     input: sections.input,
     output: sections.output,

@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+// * author: 김기성
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -66,62 +67,61 @@ public class BookmarkServiceImpl implements BookmarkService {
     }
 
     /**
-     * 현재 로그인한 사용자가 북마크한 모든 퀴즈를 조회
+     * 현재 로그인한 사용자가 북마크한 모든 퀴즈 조회
      * @return 북마크된 퀴즈와 마지막 제출 기록이 담긴 DTO 목록
      */
     @Override
     @Transactional(readOnly = true)
-    public List<BookmarkDetailDTO> getSavedQuizzes() {
+    public List<BookmarkDetailDTO> getBookmarks() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         MemberEntity member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new NoSuchElementException("사용자를 찾을 수 없습니다: " + email));
 
-        List<Workbook> workbooks = workbookRepository.findAllByMember(member);
-        if (workbooks.isEmpty()) {
+        List<Workbook> userWorkbooks = workbookRepository.findAllByMember(member);
+        if (userWorkbooks.isEmpty()) {
             return List.of();
         }
 
-        List<CodingQuiz> savedQuizzes = codingQuizRepository.findAllByWorkbookInAndIsSaved(workbooks, true);
+        List<CodingQuiz> savedQuizzes = codingQuizRepository.findAllByWorkbookInAndIsSaved(userWorkbooks, true);
 
-        // 각 문제집의 전체 퀴즈 목록을 미리 조회하여 Map에 저장 (N+1 문제 방지)
-        Map<Integer, List<CodingQuiz>> allQuizzesByWorkbook = savedQuizzes.stream()
-                .map(CodingQuiz::getWorkbook)
-                .distinct()
-                .collect(Collectors.toMap(Workbook::getId, workbook -> codingQuizRepository.findByWorkbookIdOrderByIdAsc(workbook.getId())));
+        // N+1 문제를 피하기 위해, 관련된 문제집의 전체 퀴즈 목록을 미리 한 번에 가져옴
+        Map<Integer, List<CodingQuiz>> allQuizzesByWorkbookMap = userWorkbooks.stream()
+                .collect(Collectors.toMap(Workbook::getId, wb -> codingQuizRepository.findByWorkbookIdOrderByIdAsc(wb.getId())));
 
-        return savedQuizzes.stream()
-                .map(quiz -> {
-                    long totalSubmissions = submissionRepository.countByCodingQuiz(quiz);
-                    long acceptedSubmissions = submissionRepository.countByCodingQuizAndStatus(quiz, "Accepted");
-                    QuizResponse.Spec spec = new QuizResponse.Spec(totalSubmissions, acceptedSubmissions);
+        // DTO로 변환
+        return savedQuizzes.stream().map(quiz -> {
+            long totalSubmissions = submissionRepository.countByCodingQuiz(quiz);
+            long acceptedSubmissions = submissionRepository.countByCodingQuizAndStatus(quiz, "Accepted");
+            QuizResponse.Spec spec = new QuizResponse.Spec(totalSubmissions, acceptedSubmissions);
 
-                    // 원래 문제 번호 계산
-                    List<CodingQuiz> allQuizzes = allQuizzesByWorkbook.get(quiz.getWorkbook().getId());
-                    int problemNumber = allQuizzes.indexOf(quiz) + 1;
+            List<CodingQuiz> allQuizzesInWorkbook = allQuizzesByWorkbookMap.get(quiz.getWorkbook().getId());
+            int quizNumber = -1; // 기본값
+            if (allQuizzesInWorkbook != null) {
+                quizNumber = allQuizzesInWorkbook.indexOf(quiz) + 1;
+            }
 
-                    QuizResponse quizResponse = QuizResponse.builder()
-                            .id(quiz.getId())
-                            .workbookId(quiz.getWorkbook().getId())
-                            .workbookTopic(quiz.getWorkbook().getTopic()) // 문제집 주제 추가
-                            .quiz(quiz.getQuiz())
-                            .explanation(quiz.getExplanation())
-                            .concept(quiz.getConcept())
-                            .isSaved(quiz.getIsSaved())
-                            .problemNumber(problemNumber) // 문제 번호 추가
-                            .spec(spec)
-                            .build();
+            QuizResponse quizResponse = QuizResponse.builder()
+                    .id(quiz.getId())
+                    .workbookId(quiz.getWorkbook().getId())
+                    .workbookTopic(quiz.getWorkbook().getTopic())
+                    .quiz(quiz.getQuiz())
+                    .explanation(quiz.getExplanation())
+                    .concept(quiz.getConcept())
+                    .isSaved(quiz.getIsSaved())
+                    .quizNumber(quizNumber)
+                    .spec(spec)
+                    .build();
 
-                    Optional<Submission> lastSubmissionOpt = submissionRepository.findTopByMemberAndCodingQuizOrderBySubmittedAtDesc(member, quiz);
-                    SubmissionResponseDto submissionResponse = lastSubmissionOpt
-                            .map(submissionMapper::toDto)
-                            .orElse(null);
+            Optional<Submission> lastSubmissionOpt = submissionRepository.findTopByMemberAndCodingQuizOrderBySubmittedAtDesc(member, quiz);
+            SubmissionResponseDto submissionResponse = lastSubmissionOpt
+                    .map(submissionMapper::toDto)
+                    .orElse(null);
 
-                    return BookmarkDetailDTO.builder()
-                            .quiz(quizResponse)
-                            .lastSubmission(submissionResponse)
-                            .build();
-                })
-                .collect(Collectors.toList());
+            return BookmarkDetailDTO.builder()
+                    .quiz(quizResponse)
+                    .lastSubmission(submissionResponse)
+                    .build();
+        }).collect(Collectors.toList());
     }
 
     /**
@@ -148,22 +148,19 @@ public class BookmarkServiceImpl implements BookmarkService {
         // 퀴즈 내용을 섹션별로 분리
         Sections sec = splitSections(defaultIfBlank(cq.getQuiz(), ""));
         return BookmarkedQuizViewDTO.builder()
-                .id(cq.getId()) // 퀴즈 ID
-                .statement(sec.statement) // 문제 설명
-                .input(sec.input) // 입력 형식
-                .output(sec.output) // 출력 형식
-                .sampleInput(sec.sample) // 예제 입력
-                .explanation(defaultIfBlank(cq.getExplanation(), "")) // 해설
-                .concept(defaultIfBlank(cq.getConcept(), "")) // 관련 개념
-                .isSaved(cq.getIsSaved()) // 북마크 여부
-                .spec(new BookmarkedQuizViewDTO.Spec(0L, 0L)) // 퀴즈 스펙 (제출 수, 정답 수)
+                .id(cq.getId())             // 퀴즈 ID
+                .statement(sec.statement)   // 문제 설명
+                .input(sec.input)           // 입력 형식
+                .output(sec.output)         // 출력 형식
+                .sampleInput(sec.sample)    // 예제 입력
+                .explanation(defaultIfBlank(cq.getExplanation(), ""))   // 해설
+                .concept(defaultIfBlank(cq.getConcept(), ""))           // 관련 개념
+                .isSaved(cq.getIsSaved())   // 북마크 여부
+                .spec(new BookmarkedQuizViewDTO.Spec(0L, 0L))   // 퀴즈 스펙 (제출 수, 정답 수)
                 .build();
     }
 
-    // Helper methods copied from WorkbookServiceImpl to maintain package isolation
-    /**
-     * 퀴즈 내용을 섹션별로 분리하기 위한 레코드
-     */
+    // 퀴즈 내용을 섹션별로 분리하기 위한 레코드
     private record Sections(String statement, String input, String output, String sample) {}
     /**
      * 퀴즈 내용을 문제, 입력, 출력, 예제 입력 섹션으로 분리
@@ -208,7 +205,7 @@ public class BookmarkServiceImpl implements BookmarkService {
     }
 
     /**
-     * 현재 로그인한 사용자가 북마크한 퀴즈가 있는 모든 문제집의 주제(topic) 목록을 조회
+     * 현재 로그인한 사용자가 북마크한 퀴즈가 있는 모든 문제집의 주제(topic) 목록 조회
      * @return 북마크된 퀴즈가 있는 문제집 주제 목록
      */
     @Override

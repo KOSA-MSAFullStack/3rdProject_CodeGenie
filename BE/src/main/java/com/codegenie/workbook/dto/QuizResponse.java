@@ -12,8 +12,6 @@ public class QuizResponse {
     @JsonProperty("workbook_id")
     private Integer workbookId;
 
-    private String workbookTopic; // 문제집 주제 추가
-
     private String quiz;
     private String explanation;
     private String concept;
@@ -21,9 +19,9 @@ public class QuizResponse {
     @JsonProperty("is_saved")
     private boolean isSaved;
 
-    private int problemNumber; // 문제 번호 추가
-
-    private Spec spec;
+    private String workbookTopic;   // 문제집 주제 추가
+    private int quizNumber;         // 문제 번호 추가
+    private Spec spec;              // 제출 & 정답 수
 
     public record Spec(long submissions, long accepted) {}
 }

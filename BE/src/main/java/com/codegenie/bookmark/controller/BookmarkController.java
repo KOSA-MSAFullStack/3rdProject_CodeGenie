@@ -37,12 +37,12 @@ public class BookmarkController {
     }
 
     /**
-     * 현재 로그인한 사용자가 북마크한 모든 퀴즈를 조회
+     * 현재 로그인한 사용자가 북마크한 모든 퀴즈 조회
      * @return 북마크된 퀴즈와 마지막 제출 기록이 담긴 DTO 리스트
      */
     @GetMapping("/saved")
     public ResponseEntity<List<BookmarkDetailDTO>> getSavedBookmarks() { // Reverted return type
-        List<BookmarkDetailDTO> savedQuizzes = bookmarkService.getSavedQuizzes();
+        List<BookmarkDetailDTO> savedQuizzes = bookmarkService.getBookmarks();
         return ResponseEntity.ok(savedQuizzes);
     }
 
@@ -57,7 +57,7 @@ public class BookmarkController {
     }
 
     /**
-     * 현재 로그인한 사용자가 북마크한 퀴즈가 있는 모든 문제집의 주제(topic) 목록을 조회
+     * 현재 로그인한 사용자가 북마크한 퀴즈가 있는 모든 문제집의 주제(topic) 목록 조회
      * @return 북마크된 퀴즈가 있는 문제집 주제 목록
      */
     @GetMapping("/bookmarked-topics")
