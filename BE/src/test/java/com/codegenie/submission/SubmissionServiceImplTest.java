@@ -126,6 +126,7 @@ class SubmissionServiceImplTest {
         SubmissionRequestDto requestDto = new SubmissionRequestDto();
         requestDto.setAnswer("code");
         requestDto.setLanguage("Java");
+        requestDto.setQuizId(1); // 추가
         when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
 
         // When & Then
