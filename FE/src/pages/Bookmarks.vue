@@ -132,7 +132,7 @@ const cur = computed(() => {
 
   return {
     id: originalProblem.quiz.id,
-    problemNumber: originalProblem.quiz.quizNumber,
+    quizNumber: originalProblem.quiz.quizNumber,
     statement: sections.statement,
     input: sections.input,
     output: sections.output,
