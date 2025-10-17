@@ -28,6 +28,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import com.codegenie.workbooktestcase.entity.QuizTestcase;
+import com.codegenie.workbooktestcase.repository.QuizTestcaseRepository;
+
+/* 제출 집계용 */
+import com.codegenie.submission.repository.SubmissionRepository;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -38,9 +44,11 @@ public class WorkbookServiceImpl implements WorkbookService {
     private final MemberRepository memberRepository;
     private final ChatClient chatClient;
 
+    private final QuizTestcaseRepository quizTestcaseRepository;
+    private final SubmissionRepository submissionRepository;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // ✅ 추가: 현재 로그인 사용자를 얻는 헬퍼(아래 세 메서드에서만 사용)
     private MemberEntity currentMember() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = (auth != null ? auth.getName() : null);
@@ -52,7 +60,6 @@ public class WorkbookServiceImpl implements WorkbookService {
     @Override
     @Transactional
     public WorkbookResponse create(CreateWorkbookRequest req) {
-        // ⛳ 기존 로직 그대로 유지 (필요 최소 변경 원칙)
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = (auth != null ? auth.getName() : null);
         if (email == null) throw new IllegalStateException("로그인 정보가 없습니다.");
@@ -71,8 +78,8 @@ public class WorkbookServiceImpl implements WorkbookService {
                 .build();
         workbookRepository.save(wb);
 
+        // 프롬프트 호출
         String promptText = buildPrompt(req);
-
         List<AiQuizDTO> aiQuizzes = callOpenAiAndParse(promptText);
         if (aiQuizzes == null || aiQuizzes.isEmpty()) {
             log.error("AI 퀴즈 생성 실패: 빈 결과");
@@ -108,6 +115,19 @@ public class WorkbookServiceImpl implements WorkbookService {
                     .build();
 
             codingQuizRepository.save(entity);
+
+            // 테스트케이스가 내려온 경우 저장(옵션)
+            if (q.testCases() != null) {
+                for (AiTestCase tc : q.testCases()) {
+                    QuizTestcase row = new QuizTestcase();
+                    row.setQuizId(entity.getId());
+                    row.setInputText(defaultIfBlank(tc.input(), ""));
+                    row.setExpectedOut(defaultIfBlank(tc.output(), ""));
+                    row.setIsSample(Boolean.TRUE.equals(tc.isSample()));
+                    // weight은 컬럼 default 1 사용
+                    quizTestcaseRepository.save(row);
+                }
+            }
         }
 
         return toDto(wb, false, null);
@@ -116,7 +136,6 @@ public class WorkbookServiceImpl implements WorkbookService {
     @Override
     @Transactional(readOnly = true)
     public WorkbookResponse getOneDto(Integer id) {
-        // ✅ 변경: 소유자 검증 포함
         MemberEntity me = currentMember();
         Workbook wb = workbookRepository.findByIdAndMember(id, me)
                 .orElseThrow(() -> new IllegalArgumentException("Workbook not found: " + id));
@@ -130,7 +149,6 @@ public class WorkbookServiceImpl implements WorkbookService {
     @Override
     @Transactional(readOnly = true)
     public List<QuizView> getQuizzes(Integer workbookId) {
-        // ✅ 추가: 먼저 내 워크북인지 확인(아니면 404)
         MemberEntity me = currentMember();
         workbookRepository.findByIdAndMember(workbookId, me)
                 .orElseThrow(() -> new IllegalArgumentException("Workbook not found: " + workbookId));
@@ -144,10 +162,8 @@ public class WorkbookServiceImpl implements WorkbookService {
     @Override
     @Transactional(readOnly = true)
     public List<WorkbookResponse> getRecent(int limit) {
-        // ❌ 기존: findAll() 후 정렬 → 전부 보임
-        // ✅ 변경: 로그인 사용자 소유만 최신순
         MemberEntity me = currentMember();
-        List<Workbook> mine = workbookRepository.findByMemberOrderByIdDesc(me);
+        var mine = workbookRepository.findByMemberOrderByIdDesc(me);
         return mine.stream()
                 .limit(limit)
                 .map(wb -> toDto(wb, false, null))
@@ -186,6 +202,11 @@ public class WorkbookServiceImpl implements WorkbookService {
 
     private QuizView toView(CodingQuiz cq) {
         Sections sec = splitSections(defaultIfBlank(cq.getQuiz(), ""));
+
+        // ✅ 집계 쿼리로 제출/정답 수 채우기(스키마 변경 없음)
+        long submissions = submissionRepository.countByQuizId(cq.getId());
+        long accepted    = submissionRepository.countByQuizIdAndStatus(cq.getId(), "Accepted");
+
         return QuizView.builder()
                 .id(cq.getId())
                 .statement(sec.statement)
@@ -194,13 +215,13 @@ public class WorkbookServiceImpl implements WorkbookService {
                 .sampleInput(sec.sample)
                 .explanation(defaultIfBlank(cq.getExplanation(), ""))
                 .concept(defaultIfBlank(cq.getConcept(), ""))
-                .spec(new QuizView.Spec(0L, 0L))
+                .spec(new QuizView.Spec(submissions, accepted))
                 .build();
     }
 
-    /* ============================== 프롬프트/AI 파싱 유틸 (원본 그대로) ============================== */
+    /* ============================== 프롬프트/AI 파싱 ============================== */
 
-    private String buildPrompt(CreateWorkbookRequest req) { /* 원문 그대로 */ 
+    private String buildPrompt(CreateWorkbookRequest req) {
         String level = nullSafe(req.getLevel());
         String style = nullSafe(req.getStyle());
         String language = nullSafe(req.getLanguage());
@@ -260,6 +281,7 @@ public class WorkbookServiceImpl implements WorkbookService {
             - 난이도 완급조절: 쉬움(3)·보통(4)·살짝도전(3) 정도 권장.
             """;
 
+        // ★★ 추가 안내: 각 문제마다 testCases 포함(샘플 2개 이상 + 히든 3개 이상)
         return ("""
             역할: 당신은 한국어로 답변하는 %s 튜터입니다. 아래 입력을 반영해 '코딩 연습 문제 10개'를 생성하세요.
             반드시 "출력 형식 규칙"만 지키고, 그 외 텍스트/마크다운/코드펜스는 절대 쓰지 마세요.
@@ -290,8 +312,12 @@ public class WorkbookServiceImpl implements WorkbookService {
                 "outputText": "출력 형식 설명 (1~2줄)",
                 "sampleInput": "예제 입력 (간단 값)",
                 "explanation": "해설 (스타일 가이드 준수)",
-                "concept": "관련 개념 '서술형 설명'(키워드 나열 금지)"
+                "concept": "관련 개념 '서술형 설명'(키워드 나열 금지)",
+                "testCases": [                 // ★ 각 테스트케이스
+                  { "input": "...", "output": "...", "isSample": true|false }
+                ]
               }
+            - testCases는 각 문제마다 최소 5개 이상(샘플 2개 이상 + 히든 3개 이상).
             - 문자열 내 따옴표/개행 등은 유효한 JSON으로 이스케이프.
             - orderNo는 1부터 10까지 증가.
             - %s 언어로 풀이 아이디어를 안내하되, 실제 코드 출력은 하지 않음.
@@ -357,9 +383,7 @@ public class WorkbookServiceImpl implements WorkbookService {
     }
 
     private static String nullSafe(String s) { return s == null ? "" : s; }
-    private static String defaultIfBlank(String s, String def) {
-        return (s == null || s.isBlank()) ? def : s;
-    }
+    private static String defaultIfBlank(String s, String def) { return (s == null || s.isBlank()) ? def : s; }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record AiQuizDTO(
@@ -370,6 +394,10 @@ public class WorkbookServiceImpl implements WorkbookService {
             String outputText,
             String sampleInput,
             String explanation,
-            String concept
+            String concept,
+            List<AiTestCase> testCases
     ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record AiTestCase(String input, String output, Boolean isSample) {}
 }

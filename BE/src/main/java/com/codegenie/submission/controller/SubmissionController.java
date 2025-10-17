@@ -1,49 +1,61 @@
-// SubmissionController.java
-// 문제 제출 관련 'API 요청&응답 처리'
-/*
- * 설명:
- * - 답안 제출 등 문제 제출 관련 HTTP 요청을 받아 처리하는 컨트롤러
- * - 클라이언트로부터 RequestDto를 받아 서비스 계층에 처리 지시, 서비스로부터 받은 ResponseDto 다시 클라이언트에게 반환
- *
- * 주요 기능:
- * - 답안 제출 API
- */
-
 package com.codegenie.submission.controller;
 
-import com.codegenie.member.dto.CustomUserDetails;
-import com.codegenie.submission.dto.SubmissionRequestDto;
-import com.codegenie.submission.dto.SubmissionResponseDto;
+import com.codegenie.member.entity.MemberEntity;
+import com.codegenie.member.repository.MemberRepository;
+import com.codegenie.submission.dto.SubmissionDto.SubmitRequest;
+import com.codegenie.submission.dto.SubmissionDto.SubmitResponse;
+import com.codegenie.submission.dto.SubmissionHistoryDto;
+import com.codegenie.submission.entity.SubmissionEntity;
+import com.codegenie.submission.repository.SubmissionRepository;
 import com.codegenie.submission.service.SubmissionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-// * author: 김기성
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;   // ✅ 추가
+
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/submissions")
 @RequiredArgsConstructor
 public class SubmissionController {
 
     private final SubmissionService submissionService;
+    private final MemberRepository memberRepo;
+    private final SubmissionRepository submissionRepository;
 
-    @PostMapping("/submission")
-    public ResponseEntity<SubmissionResponseDto> submitAnswer(
-            @RequestBody SubmissionRequestDto requestDto,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+    private MemberEntity current() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = (auth != null ? auth.getName() : null);
+        return memberRepo.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("로그인 필요"));
+    }
 
-        // 1. 사용자 인증 정보 확인
-        if (userDetails == null) {
-            // 인증되지 않은 사용자에 대한 예외 처리 또는 에러 응답
-            return ResponseEntity.status(401).build(); // Unauthorized
-        }
+    @PostMapping("/judge")
+    public SubmitResponse submit(@RequestBody SubmitRequest req) {
+        return submissionService.judge(current(), req);
+    }
 
-        // 2. 서비스 호출
-        Integer memberId = userDetails.getMemberId();
-        SubmissionResponseDto responseDto = submissionService.submitAnswer(requestDto, memberId);
+    @GetMapping
+    public List<SubmissionHistoryDto> listByQuiz(@RequestParam("quizId") Integer quizId) {
+        MemberEntity me = current();
 
-        // 3. 결과 반환
-        return ResponseEntity.ok(responseDto);
+        List<SubmissionEntity> rows =
+                submissionRepository.findByMemberIdAndQuizIdOrderBySubmittedAtDesc(me.getMember_id(), quizId);
+
+        return rows.stream()
+                .<SubmissionHistoryDto>map(s -> SubmissionHistoryDto.builder()
+                        .id(s.getId())
+                        .status(s.getStatus())
+                        .answer(s.getAnswer())
+                        .stdout(s.getStdout())
+                        .stderr(s.getStderr())
+                        .time(s.getRunTime())
+                        .memory(s.getMemory())
+                        .submittedAt(s.getSubmittedAt())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

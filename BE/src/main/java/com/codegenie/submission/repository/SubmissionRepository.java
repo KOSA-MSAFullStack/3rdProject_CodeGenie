@@ -1,49 +1,26 @@
-// SubmissionRepository.java
-// 문제 제출 정보 'DB 접근&연동'
-/*
- * 설명:
- * - Submission 엔티티에 대한 DB 작업을 처리하는 JpaRepository
- *
- * 주요 기능:
- * - 기본적인 CRUD (생성, 읽기, 수정, 삭제) 기능 자동 제공
- * - 사용자, 문제 기반의 제출 기록 조회
- */
-
+// src/main/java/com/codegenie/submission/repository/SubmissionRepository.java
 package com.codegenie.submission.repository;
 
-import com.codegenie.member.entity.MemberEntity;
-import com.codegenie.submission.entity.Submission;
-import com.codegenie.workbook.entity.CodingQuiz;
+import com.codegenie.submission.entity.SubmissionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
+import java.util.List;      // ✅ 추가
 import java.util.Optional;
 
-// * author: 김기성
-@Repository
-public interface SubmissionRepository extends JpaRepository<Submission, Integer> {
-    // JpaRepository를 상속받는 것만으로도 기본적인 DB 작업 (save, findById, findAll, delete 등)이 가능
+public interface SubmissionRepository extends JpaRepository<SubmissionEntity, Integer> {
 
-    /**
-     * 특정 사용자가 특정 문제에 대해 제출한 기록 중 가장 최신 1개 조회
-     * @param member 조회할 사용자
-     * @param codingQuiz 조회할 문제
-     * @return 가장 최신 제출 기록 (Optional)
-     */
-    Optional<Submission> findTopByMemberAndCodingQuizOrderBySubmittedAtDesc(MemberEntity member, CodingQuiz codingQuiz);
+    // 문제별 전체 제출 수
+    long countByQuizId(Integer quizId);
 
-    /**
-     * 특정 문제에 대한 모든 제출 횟수 조회
-     * @param codingQuiz 조회할 문제
-     * @return 제출 횟수
-     */
-    long countByCodingQuiz(CodingQuiz codingQuiz);
+    // 문제별 정답 수
+    long countByQuizIdAndStatus(Integer quizId, String status);
 
-    /**
-     * 특정 문제에 대해 특정 상태를 가진 제출 횟수 조회
-     * @param codingQuiz 조회할 문제
-     * @param status 조회할 상태 (예: "Accepted")
-     * @return 해당 상태의 제출 횟수
-     */
-    long countByCodingQuizAndStatus(CodingQuiz codingQuiz, String status);
+    // 조회: 현재 사용자(memberId)의 특정 퀴즈(quizId) 제출 내역, 최신순
+    List<SubmissionEntity> findByMemberIdAndQuizIdOrderBySubmittedAtDesc(Integer memberId, Integer quizId);
+
+    // 특정 사용자·문제에 대한 가장 최근 제출 1건
+    Optional<SubmissionEntity> findTopByMemberIdAndQuizIdOrderBySubmittedAtDesc(Integer memberId, Integer quizId);
+
+    // (선택) primitive 사용 시 오버로드가 편하면 아래도 추가해도 됩니다.
+    // Optional<SubmissionEntity> findTopByMemberIdAndQuizIdOrderBySubmittedAtDesc(int memberId, int quizId);
 }

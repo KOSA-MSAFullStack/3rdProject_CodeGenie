@@ -58,7 +58,7 @@
 
         <!-- 제출 탭 -->
         <div v-else-if="tab === 'submit'" class="submit-area">
-          <SubmissionEditor v-if="cur" :quiz-id="cur.id" />
+          <SubmissionEditor v-if="cur" :quiz-id="cur.id" :wb-language="form?.language || ''" />
         </div>
       </template>
     </section>
@@ -121,7 +121,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import authApi from '../lib/authApi'
 import SubmissionEditor from '../components/SubmissionEditor.vue'
@@ -177,11 +177,38 @@ async function bookmark() {
 function openQna(){ showQna.value = true }
 function closeQna(){ showQna.value = false }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  // ✅ 제출 컴포넌트에서 보내는 카운트 이벤트 수신
+  window.addEventListener('quiz:counts', onCounts)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('quiz:counts', onCounts)
+})
+
+/** 제출/정답 카운트 실시간 반영 */
+function onCounts(e){
+  const { quizId, submissions, accepted, delta, acceptedDelta } = e.detail || {}
+  const idx = problems.value.findIndex(p => p.id === quizId)
+  if (idx >= 0) {
+    const curSpec = problems.value[idx].spec || { submissions: 0, accepted: 0 }
+    // 절대값 우선 반영
+    if (typeof submissions === 'number') curSpec.submissions = submissions
+    if (typeof accepted === 'number') curSpec.accepted = accepted
+    // 절대값이 없으면 델타로 보수적 증가
+    if (typeof submissions !== 'number' && typeof delta === 'number') {
+      curSpec.submissions = (curSpec.submissions || 0) + delta
+    }
+    if (typeof accepted !== 'number' && typeof acceptedDelta === 'number') {
+      curSpec.accepted = (curSpec.accepted || 0) + acceptedDelta
+    }
+    // 반응성 보장
+    problems.value[idx].spec = { ...curSpec }
+  }
+}
 
 /** 🔁 id가 바뀌면 다시 로드 (같은 컴포넌트 재사용 시 필수) */
 watch(() => route.params.id, () => {
-  // 뷰 상태 초기화
   index.value = 0
   tab.value = 'quiz'
   showExplain.value = false
