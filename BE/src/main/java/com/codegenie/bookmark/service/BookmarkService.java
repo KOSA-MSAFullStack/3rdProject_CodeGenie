@@ -42,3 +42,4 @@ public interface BookmarkService {
      */
     List<String> getWorkbookTopicsWithBookmarks();
 }
+
