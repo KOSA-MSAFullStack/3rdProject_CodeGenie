@@ -39,6 +39,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+// * author: 김기성
 @ExtendWith(MockitoExtension.class)
 class BookmarkServiceImplTest {
 
