@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -70,45 +71,51 @@ public class BookmarkServiceImpl implements BookmarkService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<BookmarkDetailDTO> getSavedQuizzes() { // Reverted return type
-        // 1. 현재 로그인한 사용자 정보 조회
+    public List<BookmarkDetailDTO> getSavedQuizzes() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        // if (조건) throw 예외: 사용자를 찾을 수 없음
         MemberEntity member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new NoSuchElementException("사용자를 찾을 수 없습니다: " + email));
 
-        // 2. 사용자의 모든 문제집 조회
         List<Workbook> workbooks = workbookRepository.findAllByMember(member);
-        // if (조건) return 빈 리스트: 문제집이 없으면 빈 리스트 반환
         if (workbooks.isEmpty()) {
             return List.of();
         }
 
-        // 3. 저장된 퀴즈 목록 조회
         List<CodingQuiz> savedQuizzes = codingQuizRepository.findAllByWorkbookInAndIsSaved(workbooks, true);
 
-        // 4. 각 퀴즈에 대한 마지막 제출 기록을 찾아 DTO로 변환 (그룹화 로직 제거)
+        // 각 문제집의 전체 퀴즈 목록을 미리 조회하여 Map에 저장 (N+1 문제 방지)
+        Map<Integer, List<CodingQuiz>> allQuizzesByWorkbook = savedQuizzes.stream()
+                .map(CodingQuiz::getWorkbook)
+                .distinct()
+                .collect(Collectors.toMap(Workbook::getId, workbook -> codingQuizRepository.findByWorkbookIdOrderByIdAsc(workbook.getId())));
+
         return savedQuizzes.stream()
                 .map(quiz -> {
-                    // 퀴즈 정보를 QuizResponse DTO로 변환
+                    long totalSubmissions = submissionRepository.countByCodingQuiz(quiz);
+                    long acceptedSubmissions = submissionRepository.countByCodingQuizAndStatus(quiz, "Accepted");
+                    QuizResponse.Spec spec = new QuizResponse.Spec(totalSubmissions, acceptedSubmissions);
+
+                    // 원래 문제 번호 계산
+                    List<CodingQuiz> allQuizzes = allQuizzesByWorkbook.get(quiz.getWorkbook().getId());
+                    int problemNumber = allQuizzes.indexOf(quiz) + 1;
+
                     QuizResponse quizResponse = QuizResponse.builder()
                             .id(quiz.getId())
                             .workbookId(quiz.getWorkbook().getId())
+                            .workbookTopic(quiz.getWorkbook().getTopic()) // 문제집 주제 추가
                             .quiz(quiz.getQuiz())
                             .explanation(quiz.getExplanation())
                             .concept(quiz.getConcept())
                             .isSaved(quiz.getIsSaved())
+                            .problemNumber(problemNumber) // 문제 번호 추가
+                            .spec(spec)
                             .build();
 
-                    // 마지막 제출 기록 조회
                     Optional<Submission> lastSubmissionOpt = submissionRepository.findTopByMemberAndCodingQuizOrderBySubmittedAtDesc(member, quiz);
-
-                    // 제출 기록이 있으면 SubmissionResponseDto로 변환
                     SubmissionResponseDto submissionResponse = lastSubmissionOpt
                             .map(submissionMapper::toDto)
                             .orElse(null);
 
-                    // 최종 BookmarkDetailDTO로 빌드
                     return BookmarkDetailDTO.builder()
                             .quiz(quizResponse)
                             .lastSubmission(submissionResponse)

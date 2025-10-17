@@ -31,4 +31,19 @@ public interface SubmissionRepository extends JpaRepository<Submission, Integer>
      * @return 가장 최신 제출 기록 (Optional)
      */
     Optional<Submission> findTopByMemberAndCodingQuizOrderBySubmittedAtDesc(MemberEntity member, CodingQuiz codingQuiz);
+
+    /**
+     * 특정 문제에 대한 모든 제출 횟수 조회
+     * @param codingQuiz 조회할 문제
+     * @return 제출 횟수
+     */
+    long countByCodingQuiz(CodingQuiz codingQuiz);
+
+    /**
+     * 특정 문제에 대해 특정 상태를 가진 제출 횟수 조회
+     * @param codingQuiz 조회할 문제
+     * @param status 조회할 상태 (예: "Accepted")
+     * @return 해당 상태의 제출 횟수
+     */
+    long countByCodingQuizAndStatus(CodingQuiz codingQuiz, String status);
 }
