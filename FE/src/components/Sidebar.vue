@@ -70,6 +70,7 @@ import authApi from '../lib/authApi'
 import logo from '../assets/logo.png'
 import genieProfile from '../assets/profileGenie.png'
 import { useAuth } from "@/composables/useAuth";
+import { bookmarkUpdateEvent } from '../lib/eventBus';
 
 const route = useRoute()
 const router = useRouter()
@@ -210,6 +211,12 @@ watch(() => route.fullPath, () => {
   loadWorkbooks();
   // No need to reload bookmarked topics here, as they are static for the sidebar
   // unless a bookmark is added/removed, which would trigger auth:changed
+});
+
+// 북마크 추가/삭제 이벤트 감지하여 북마크 목록 새로고침
+watch(bookmarkUpdateEvent, () => {
+  console.log('Sidebar: 북마크 업데이트 이벤트를 감지했습니다.');
+  loadBookmarkedTopics();
 });
 </script>
 

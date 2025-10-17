@@ -125,6 +125,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import authApi from '../lib/authApi'
 import SubmissionEditor from '../components/SubmissionEditor.vue'
+import { triggerBookmarkUpdate } from '../lib/eventBus';
 
 const route = useRoute()
 const id = computed(() => route.params.id)
@@ -163,6 +164,10 @@ async function bookmark() {
     if (problem) {
       problem.isSaved = !problem.isSaved;
     }
+
+    // 다른 컴포넌트에 북마크 변경 알림
+    triggerBookmarkUpdate();
+    
   } catch (error) {
     console.error("Bookmark toggle failed:", error);
     alert("북마크 변경에 실패했습니다.");

@@ -30,9 +30,10 @@
 </template>
 
 <script setup>
+import authApi from '../lib/authApi';
 import { ref, onMounted, watch } from 'vue'; // Added watch
 import { useRoute } from 'vue-router'; // Added useRoute
-import authApi from '../lib/authApi';
+import { bookmarkUpdateEvent } from '../lib/eventBus';
 
 const route = useRoute(); // Initialize useRoute
 
@@ -108,6 +109,12 @@ onMounted(processBookmarks);
 
 // 라우트 쿼리 파라미터 변경 감지하여 북마크 재처리
 watch(() => route.query.topic, processBookmarks);
+
+// 북마크 추가/삭제 이벤트 감지하여 북마크 목록 새로고침
+watch(bookmarkUpdateEvent, () => {
+  console.log('Bookmarks.vue: 북마크 업데이트 이벤트를 감지했습니다.');
+  processBookmarks();
+});
 </script>
 
 <style scoped>
