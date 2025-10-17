@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 // 학습 페이지
 import NewWorkbook from '../pages/NewWorkbook.vue'
 import WorkbooksDetail from '../pages/Workbooks.vue'
-import SavedQuizzes from '../pages/SavedQuizzes.vue'
+import Bookmarks from '../pages/Bookmarks.vue'
 import MyPage from '../pages/MyPage.vue'
 
 // 인증 관련 페이지
@@ -31,7 +31,7 @@ const routes = [
   { path: '/new', component: NewWorkbook, meta: { title: '새 학습', requiresAuth: true } },
   // 상세 페이지 (문제집 보기)
   { path: '/workbooks/:id', component: WorkbooksDetail, meta: { title: '문제집', requiresAuth: true } },
-  { path: '/saved', component: SavedQuizzes, meta: { title: '저장한 문제', requiresAuth: true } },
+  { path: '/bookmarks', component: Bookmarks, meta: { title: '저장한 문제', requiresAuth: true } },
   { path: '/mypage', component: MyPage, meta: { title: '마이페이지', requiresAuth: true } },
 
   // 존재하지 않는 페이지 처리 (optional)

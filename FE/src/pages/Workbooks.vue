@@ -65,7 +65,9 @@
 
     <!-- 우측: 해설/개념 카드 + 즐겨찾기 버튼 -->
     <aside class="right" v-if="hasProblems && cur">
-      <button class="bookmark" title="즐겨찾기" @click="bookmark">🔖</button>
+      <button class="bookmark" title="즐겨찾기" @click="bookmark">
+        {{ cur.isSaved ? '❤️' : '🤍' }}
+      </button>
 
       <div class="card">
         <div class="card-title">해설</div>
@@ -123,6 +125,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import authApi from '../lib/authApi'
 import SubmissionEditor from '../components/SubmissionEditor.vue'
+import { triggerBookmarkUpdate } from '../lib/eventBus';
 
 const route = useRoute()
 const id = computed(() => route.params.id)
@@ -148,7 +151,28 @@ const title = computed(() =>
 
 function goPrev(){ if(isFirst.value){ alert('첫번째 문제입니다.'); return } index.value-- }
 function goNext(){ if(isLast.value){ alert('마지막 문제입니다.'); return } index.value++ }
-function bookmark(){ alert(`문제 ${index.value + 1} 즐겨찾기 저장(추후 API)`) }
+async function bookmark() {
+  if (!cur.value) return;
+
+  try {
+    // API 호출해서 is_saved 상태 토글
+    await authApi.post(`/bookmarks/${cur.value.id}`);
+
+    // 현재 보고 있는 문제의 isSaved 상태 UI에 즉시 반영
+    // problems 배열에서 직접 해당 문제의 isSaved 값 변경
+    const problem = problems.value.find(p => p.id === cur.value.id);
+    if (problem) {
+      problem.isSaved = !problem.isSaved;
+    }
+
+    // 다른 컴포넌트에 북마크 변경 알림
+    triggerBookmarkUpdate();
+    
+  } catch (error) {
+    console.error("Bookmark toggle failed:", error);
+    alert("북마크 변경에 실패했습니다.");
+  }
+}
 
 function openQna(){ showQna.value = true }
 function closeQna(){ showQna.value = false }
@@ -171,7 +195,7 @@ async function load() {
   try {
     const { data: wb } = await authApi.get(`/workbooks/${id.value}`)
     form.value = wb
-    const { data: list } = await authApi.get(`/workbooks/${id.value}/quizzes`)
+    const { data: list } = await authApi.get(`/bookmarks/workbook/${id.value}/quizzes`)
     problems.value = Array.isArray(list) ? list : []
   } catch (e) {
     console.error('문제집 로드 실패:', e)
