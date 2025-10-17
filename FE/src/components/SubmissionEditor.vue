@@ -1,16 +1,6 @@
 <template>
   <div class="submission-container">
-    <!-- 언어 선택 -->
-    <div class="toolbar">
-      <label for="language-select">언어:</label>
-      <select id="language-select" v-model="language">
-        <option value="Java">Java</option>
-        <option value="Python">Python</option>
-        <option value="C++">C++</option>
-      </select>
-    </div>
-
-    <!-- 모나코 에디터 -->
+    <!-- 에디터 -->
     <div class="editor-container" ref="editorRef"></div>
 
     <!-- 제출 버튼 -->
@@ -50,63 +40,178 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch, computed } from "vue";
 import * as monaco from "monaco-editor";
 import authApi from "../lib/authApi";
 
 const props = defineProps({
-  quizId: {
-    type: Number,
-    required: true,
-  },
+  quizId: { type: Number, required: true },
+  /** 워크북 생성 시 사용자가 적은 언어 문자열 (자바/java/Java/파이썬/씨플플 등 자유형식) */
+  wbLanguage: { type: String, default: "" },
 });
 
 const editorRef = ref(null);
 let editorInstance = null;
 
-const language = ref("Java");
 const code = ref("");
 const isLoading = ref(false);
 const result = ref(null);
-
 const statusClass = ref("");
 
-// Monaco Editor 초기화
+// ✅ 퀴즈별 로컬 스토리지 키
+const STORAGE_KEY = computed(() => `codegenie:q${props.quizId}`);
+
+// ---- 언어 정규화 & 템플릿 -------------------------------------------------
+function normalizeLanguage(raw) {
+  if (!raw) return "Java";
+  let s = String(raw).trim().toLowerCase();
+  if (s.includes("자바")) return "Java";
+  if (s.includes("파이썬")) return "Python";
+  if ((s.includes("씨") && s.includes("플")) || s.includes("c++")) return "C++";
+  s = s.replace(/\s+/g, "");
+  if (s.startsWith("java") || s === "jav" || s === "jvaa") return "Java";
+  if (s.startsWith("py") || s.startsWith("python")) return "Python";
+  if (s.includes("cpp") || s.includes("cxx") || s.includes("c++")) return "C++";
+  if (s === "c") return "C++";
+  return "Java";
+}
+
+const JAVA_TEMPLATE = `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        // 여기에 코드를 입력하세요.
+
+        sc.close();
+    }
+}
+`;
+
+const CPP_TEMPLATE = `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    // 여기에 코드를 입력하세요.
+
+    return 0;
+}
+`;
+
+const PY_TEMPLATE = `// 여기에 코드를 입력하세요.`;
+
+// Monaco language id 매핑
+function monacoLangId(canonical) {
+  if (canonical === "Java") return "java";
+  if (canonical === "Python") return "python";
+  if (canonical === "C++") return "cpp";
+  return "plaintext";
+}
+
+function starterTemplate(canonical) {
+  if (canonical === "Java") return JAVA_TEMPLATE;
+  if (canonical === "C++") return CPP_TEMPLATE;
+  if (canonical === "Python") return PY_TEMPLATE;
+  return "// 여기에 코드를 작성하세요";
+}
+
+// ---- 로컬 저장/복원 -------------------------------------------------------
+let saveTimer = null;
+function saveLocal() {
+  try {
+    localStorage.setItem(STORAGE_KEY.value, code.value ?? "");
+  } catch (_) {}
+}
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveLocal, 300); // 300ms 디바운스
+}
+function loadLocal() {
+  try {
+    return localStorage.getItem(STORAGE_KEY.value) ?? "";
+  } catch (_) {
+    return "";
+  }
+}
+
+// ---- Monaco Editor 초기화 -------------------------------------------------
+function bootEditor() {
+  if (!editorRef.value) return;
+  const canonical = normalizeLanguage(props.wbLanguage);
+
+  // 먼저 저장된 코드 복원 시도
+  const saved = loadLocal();
+  const initial = saved && saved.trim().length > 0 ? saved : starterTemplate(canonical);
+
+  editorInstance = monaco.editor.create(editorRef.value, {
+    value: initial,
+    language: monacoLangId(canonical),
+    theme: "vs-light",
+    automaticLayout: true,
+  });
+  code.value = editorInstance.getValue();
+
+  editorInstance.onDidChangeModelContent(() => {
+    code.value = editorInstance.getValue();
+    scheduleSave(); // ✅ 입력 시 자동 저장
+  });
+}
+
 onMounted(() => {
-  if (editorRef.value) {
-    editorInstance = monaco.editor.create(editorRef.value, {
-      value: `// 여기에 코드를 작성하세요`,
-      language: "java",
-      theme: "vs-light",
-      automaticLayout: true,
-    });
-
-    // 코드가 변경될 때마다 ref에 반영
-    editorInstance.onDidChangeModelContent(() => {
-      code.value = editorInstance.getValue();
-    });
-  }
+  bootEditor();
+  // ✅ 새로고침/탭 이동 시에도 저장
+  window.addEventListener("beforeunload", saveLocal);
 });
 
-// 컴포넌트 파괴 전 에디터 인스턴스 정리
-onBeforeUnmount(() => {
-  if (editorInstance) {
-    editorInstance.dispose();
-  }
-});
+watch(
+  () => props.quizId,
+  () => {
+    // 다른 문제로 이동 시 현재 코드 저장 후, 새 키로 로드하여 교체
+    saveLocal();
+    const canonical = normalizeLanguage(props.wbLanguage);
+    const nextSaved = loadLocal();
+    const nextVal = nextSaved && nextSaved.trim().length > 0 ? nextSaved : starterTemplate(canonical);
 
-// 언어 변경 시 에디터 언어 모드 변경
-watch(language, (newLang) => {
-  if (editorInstance) {
-    const model = editorInstance.getModel();
-    if (model) {
-      const langMap = { Java: "java", Python: "python", "C++": "cpp" };
-      monaco.editor.setModelLanguage(model, langMap[newLang] || "plaintext");
+    if (editorInstance) {
+      editorInstance.setValue(nextVal);
+      code.value = nextVal;
     }
   }
+);
+
+// wbLanguage 변경 시 템플릿 언어만 맞춤 (기존 사용자 코드가 있으면 덮어쓰지 않음)
+watch(
+  () => props.wbLanguage,
+  (nv, ov) => {
+    if (!editorInstance) return;
+    const canonical = normalizeLanguage(nv);
+    const model = editorInstance.getModel();
+    if (model) {
+      monaco.editor.setModelLanguage(model, monacoLangId(canonical));
+      // 저장된 코드가 없고 템플릿만 있는 초기상태일 때만 템플릿 변경
+      const oldCanon = normalizeLanguage(ov);
+      const wasTemplate = code.value === starterTemplate(oldCanon);
+      const hasSaved = (loadLocal() ?? "").trim().length > 0;
+      if (wasTemplate && !hasSaved) {
+        editorInstance.setValue(starterTemplate(canonical));
+        code.value = editorInstance.getValue();
+        scheduleSave();
+      }
+    }
+  }
+);
+
+onBeforeUnmount(() => {
+  saveLocal();
+  if (editorInstance) editorInstance.dispose();
+  window.removeEventListener("beforeunload", saveLocal);
 });
 
-// 제출 핸들러
+// ---- 제출 -----------------------------------------------------------------
 async function handleSubmit() {
   if (!code.value.trim()) {
     alert("코드를 입력하세요.");
@@ -118,25 +223,41 @@ async function handleSubmit() {
   statusClass.value = "";
 
   try {
-    const response = await authApi.post("/submission", {
+    // language 필드는 서버에서 무시하므로 빈 문자열 유지 (DTO 호환용)
+    const { data } = await authApi.post("/submissions/judge", {
       quizId: props.quizId,
       answer: code.value,
-      language: language.value,
+      language: "",
     });
-    result.value = response.data;
 
-    // 상태에 따라 클래스 부여
-    if (result.value.status === "Accepted") {
-      statusClass.value = "status-accepted";
-    } else {
-      statusClass.value = "status-error";
-    }
+    // ✅ 제출 후에도 코드 그대로 유지 + 저장
+    saveLocal();
+
+    result.value = data;
+    statusClass.value =
+      result.value.status === "Accepted" ? "status-accepted" : "status-error";
+
+    // 문제 탭 카운트 실시간 갱신
+    const absoluteCountsAvailable =
+      typeof result.value.submissions === "number" &&
+      typeof result.value.accepted === "number";
+
+    window.dispatchEvent(
+      new CustomEvent("quiz:counts", {
+        detail: {
+          quizId: props.quizId,
+          submissions: absoluteCountsAvailable ? result.value.submissions : undefined,
+          accepted: absoluteCountsAvailable ? result.value.accepted : undefined,
+          delta: 1,
+          acceptedDelta: result.value.status === "Accepted" ? 1 : 0,
+        },
+      })
+    );
   } catch (error) {
     console.error("Submission failed:", error);
     result.value = {
       status: "Error",
-      stderr:
-        error.response?.data?.message || "채점 서버에 연결할 수 없습니다.",
+      stderr: error.response?.data?.message || "채점 서버에 연결할 수 없습니다.",
     };
     statusClass.value = "status-error";
   } finally {
@@ -146,97 +267,21 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
-.submission-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.toolbar select {
-  padding: 6px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-}
-.editor-container {
-  width: 100%;
-  height: 400px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-.actions {
-  display: flex;
-  justify-content: flex-end;
-}
-.actions button {
-  border: 0;
-  background: #1a4dd9;
-  color: #fff;
-  border-radius: 20px;
-  padding: 10px 20px;
-  cursor: pointer;
-  font-size: 16px;
-}
-.actions button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.result-container {
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 16px;
-}
-.result-container h4 {
-  margin: 0 0 12px 0;
-}
-.result-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.grid-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: #f7f7f9;
-  padding: 12px;
-  border-radius: 6px;
-}
-.grid-item strong {
-  font-size: 14px;
-  color: #555;
-}
-.grid-item span {
-  font-size: 16px;
-  font-weight: bold;
-}
-.output-box {
-  margin-top: 12px;
-}
-.output-box h5 {
-  margin: 0 0 8px 0;
-}
-.output-box pre {
-  background: #f7f7f9;
-  color: #333;
-  padding: 12px;
-  border-radius: 6px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  margin: 0;
-}
-.output-box.error pre {
-  background: #fff0f0;
-  color: #d92d20;
-}
-.status-accepted {
-  color: #16a34a;
-}
-.status-error {
-  color: #d92d20;
-}
+.submission-container { display: flex; flex-direction: column; gap: 16px; }
+.editor-container { width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 8px; }
+.actions { display: flex; justify-content: flex-end; }
+.actions button { border: 0; background: #1a4dd9; color: #fff; border-radius: 20px; padding: 10px 20px; cursor: pointer; font-size: 16px; }
+.actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+.result-container { border: 1px solid #eee; border-radius: 8px; padding: 16px; }
+.result-container h4 { margin: 0 0 12px 0; }
+.result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.grid-item { display: flex; flex-direction: column; gap: 4px; background: #f7f7f9; padding: 12px; border-radius: 6px; }
+.grid-item strong { font-size: 14px; color: #555; }
+.grid-item span { font-size: 16px; font-weight: bold; }
+.output-box { margin-top: 12px; }
+.output-box h5 { margin: 0 0 8px 0; }
+.output-box pre { background: #f7f7f9; color: #333; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-wrap: break-word; margin: 0; }
+.output-box.error pre { background: #fff0f0; color: #d92d20; }
+.status-accepted { color: #16a34a; }
+.status-error { color: #d92d20; }
 </style>
