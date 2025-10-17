@@ -143,6 +143,7 @@ function logoutUser() {
   localStorage.removeItem("token");
   username.value = "";
   showMenu.value = false;
+  workbooks.value = []; // 문제집 목록 초기화
 
   // Sidebar 상태 갱신
   window.dispatchEvent(new Event("auth:changed"));
