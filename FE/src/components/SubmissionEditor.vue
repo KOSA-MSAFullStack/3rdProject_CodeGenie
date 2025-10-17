@@ -40,7 +40,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch, computed } from "vue";
 import * as monaco from "monaco-editor";
 import authApi from "../lib/authApi";
 
@@ -57,6 +57,9 @@ const code = ref("");
 const isLoading = ref(false);
 const result = ref(null);
 const statusClass = ref("");
+
+// ✅ 퀴즈별 로컬 스토리지 키
+const STORAGE_KEY = computed(() => `codegenie:q${props.quizId}`);
 
 // ---- 언어 정규화 & 템플릿 -------------------------------------------------
 function normalizeLanguage(raw) {
@@ -116,12 +119,36 @@ function starterTemplate(canonical) {
   return "// 여기에 코드를 작성하세요";
 }
 
+// ---- 로컬 저장/복원 -------------------------------------------------------
+let saveTimer = null;
+function saveLocal() {
+  try {
+    localStorage.setItem(STORAGE_KEY.value, code.value ?? "");
+  } catch (_) {}
+}
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveLocal, 300); // 300ms 디바운스
+}
+function loadLocal() {
+  try {
+    return localStorage.getItem(STORAGE_KEY.value) ?? "";
+  } catch (_) {
+    return "";
+  }
+}
+
 // ---- Monaco Editor 초기화 -------------------------------------------------
 function bootEditor() {
   if (!editorRef.value) return;
   const canonical = normalizeLanguage(props.wbLanguage);
+
+  // 먼저 저장된 코드 복원 시도
+  const saved = loadLocal();
+  const initial = saved && saved.trim().length > 0 ? saved : starterTemplate(canonical);
+
   editorInstance = monaco.editor.create(editorRef.value, {
-    value: starterTemplate(canonical),
+    value: initial,
     language: monacoLangId(canonical),
     theme: "vs-light",
     automaticLayout: true,
@@ -130,34 +157,58 @@ function bootEditor() {
 
   editorInstance.onDidChangeModelContent(() => {
     code.value = editorInstance.getValue();
+    scheduleSave(); // ✅ 입력 시 자동 저장
   });
 }
 
 onMounted(() => {
   bootEditor();
+  // ✅ 새로고침/탭 이동 시에도 저장
+  window.addEventListener("beforeunload", saveLocal);
 });
 
-// wbLanguage가 바뀌었을 때(일반적이진 않지만) 아직 사용자가 수정 전이면 템플릿/언어 갱신
+watch(
+  () => props.quizId,
+  () => {
+    // 다른 문제로 이동 시 현재 코드 저장 후, 새 키로 로드하여 교체
+    saveLocal();
+    const canonical = normalizeLanguage(props.wbLanguage);
+    const nextSaved = loadLocal();
+    const nextVal = nextSaved && nextSaved.trim().length > 0 ? nextSaved : starterTemplate(canonical);
+
+    if (editorInstance) {
+      editorInstance.setValue(nextVal);
+      code.value = nextVal;
+    }
+  }
+);
+
+// wbLanguage 변경 시 템플릿 언어만 맞춤 (기존 사용자 코드가 있으면 덮어쓰지 않음)
 watch(
   () => props.wbLanguage,
   (nv, ov) => {
     if (!editorInstance) return;
-    if (code.value.trim().length > 0 && code.value !== starterTemplate(normalizeLanguage(ov))) {
-      // 이미 사용자가 수정했으면 건들지 않음
-      return;
-    }
     const canonical = normalizeLanguage(nv);
     const model = editorInstance.getModel();
     if (model) {
       monaco.editor.setModelLanguage(model, monacoLangId(canonical));
-      editorInstance.setValue(starterTemplate(canonical));
-      code.value = editorInstance.getValue();
+      // 저장된 코드가 없고 템플릿만 있는 초기상태일 때만 템플릿 변경
+      const oldCanon = normalizeLanguage(ov);
+      const wasTemplate = code.value === starterTemplate(oldCanon);
+      const hasSaved = (loadLocal() ?? "").trim().length > 0;
+      if (wasTemplate && !hasSaved) {
+        editorInstance.setValue(starterTemplate(canonical));
+        code.value = editorInstance.getValue();
+        scheduleSave();
+      }
     }
   }
 );
 
 onBeforeUnmount(() => {
+  saveLocal();
   if (editorInstance) editorInstance.dispose();
+  window.removeEventListener("beforeunload", saveLocal);
 });
 
 // ---- 제출 -----------------------------------------------------------------
@@ -178,6 +229,9 @@ async function handleSubmit() {
       answer: code.value,
       language: "",
     });
+
+    // ✅ 제출 후에도 코드 그대로 유지 + 저장
+    saveLocal();
 
     result.value = data;
     statusClass.value =
