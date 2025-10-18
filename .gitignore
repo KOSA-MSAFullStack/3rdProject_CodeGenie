@@ -1,5 +1,7 @@
 # --- KKS ---
 .Ref
+GEMINI.md
+AGENTS.md
 deploy.sh
 application-secure.properties
 application-local.properties
