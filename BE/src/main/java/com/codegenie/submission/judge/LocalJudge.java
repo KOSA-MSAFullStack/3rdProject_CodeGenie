@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
+// * author: 손윤찬
 @Component
 public class LocalJudge {
 
