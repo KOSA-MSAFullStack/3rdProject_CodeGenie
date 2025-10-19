@@ -1,15 +1,26 @@
+// SubmissionService.java
+// 문제 제출 '비즈니스 로직 인터페이스'
+/*
+ * 설명:
+ * - 문제 제출 관련 비즈니스 로직 정의하는 인터페이스
+ * 
+ * 주요 기능:
+ * - 답안 제출 및 채점 요청 기능 명세
+ */
+
 package com.codegenie.submission.service;
 
 import com.codegenie.member.entity.MemberEntity;
-import com.codegenie.submission.dto.SubmissionDto;
+import com.codegenie.submission.dto.SubmissionDTO;
 
+// * author: 김기성
 public interface SubmissionService {
 
     /**
-     * 코드 채점 요청 (현재는 간이 채점):
-     * - 실행기 없이 규칙적으로 판정(데모용)
-     * - 결과를 저장하고 최신 집계(submissions/accepted)를 함께 반환
-     * - 나중에 실행 채점기로 교체 시 구현만 바꾸면 됨
+     * 답안 제출 후, Judge0 통해 채점 요청
+     * @param member 현재 로그인한 사용자 엔티티
+     * @param req 제출 요청 데이터 (코드, 언어, 문제 ID)
+     * @return 채점 결과 데이터
      */
-    SubmissionDto.SubmitResponse judge(MemberEntity member, SubmissionDto.SubmitRequest req);
+    SubmissionDTO.SubmitResponse judge(MemberEntity member, SubmissionDTO.SubmitRequest req);
 }
