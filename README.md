@@ -139,7 +139,6 @@
 
 ### 1. 필수 준비물
 
-*   **Docker Desktop:** Judge0 채점 서버 실행
 *   **Node.js & npm:** 프론트엔드(Vue) 개발
 *   **Java & Gradle:** 백엔드(Spring Boot) 개발
 
