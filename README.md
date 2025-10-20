@@ -19,7 +19,7 @@
 
 - __프로젝트 블로그__ : [노션_코드지니 (CodeGenie)](https://www.notion.so/27e83a6b63ea8184a6f2d8f6736c70fc)
 
-- __발표 자료__ : [Canva_프로젝트 PPT]()
+- __발표 자료__ : [Canva_프로젝트 발표 PPT](https://www.canva.com/design/DAG2AZm1Wf8/qkdjCvpt0zCNJfKCsDMZEw/edit?utm_content=DAG2AZm1Wf8&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
 
 - __시연 영상__ : <영상 추가>
 <br>
