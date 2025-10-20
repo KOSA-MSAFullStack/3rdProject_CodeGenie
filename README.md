@@ -69,7 +69,7 @@
 <!--프로젝트 실행 가이드-->
 ## 🚀 Getting Started Guide
 
-이 프로젝트는 백엔드(Spring Boot), 프론트엔드(Vue), 그리고 채점 서버(Judge0)로 구성
+&nbsp;&nbsp;&nbsp;&nbsp;이 프로젝트는 백엔드(Spring Boot), 프론트엔드(Vue), 그리고 채점 서버(Judge0)로 구성
 프로젝트 시작 개발자는 아래 가이드 따라 개발 환경 설정 및 실행 가능
 
 ### 1. 필수 준비물
