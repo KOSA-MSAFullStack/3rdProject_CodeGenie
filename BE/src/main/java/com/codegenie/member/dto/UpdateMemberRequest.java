@@ -1,4 +1,3 @@
-// com.codegenie.member.dto.UpdateMemberRequest.java
 package com.codegenie.member.dto;
 
 import lombok.Getter;

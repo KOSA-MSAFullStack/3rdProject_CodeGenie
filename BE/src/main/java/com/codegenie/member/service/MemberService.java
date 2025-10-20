@@ -25,7 +25,7 @@ public class MemberService {
         return new MemberInfoDTO(member.getEmail(), member.getUsername());
     }
 
-    // 회원 정보 수정 (비밀번호 검증 포함)
+    // 회원 정보 수정 (이름 변경 / 비밀번호 변경 분기 처리)
     public void updateMember(String email, MemberUpdateDTO dto) {
         MemberEntity member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
@@ -36,28 +36,49 @@ public class MemberService {
         System.out.println("입력된 새 비밀번호: " + dto.getNewPassword());
         System.out.println("DB 저장된 해시: " + member.getPassword());
 
-        // 현재 비밀번호 검증
-        if (!passwordEncoder.matches(dto.getCurrentPassword(), member.getPassword())) {
-            System.out.println("❌ 현재 비밀번호가 일치하지 않습니다.");
-            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        // 이름만 변경하려는 경우 (새 비밀번호가 비어있고, 이름만 변경됨)
+        boolean wantsToChangePassword = dto.getNewPassword() != null && !dto.getNewPassword().isBlank();
+        boolean wantsToChangeName = dto.getUsername() != null && !dto.getUsername().isBlank();
+
+        if (!wantsToChangeName && !wantsToChangePassword) {
+            throw new IllegalArgumentException("변경할 항목이 없습니다.");
         }
 
-        // 새 비밀번호가 기존 비밀번호와 동일한 경우
-        if (passwordEncoder.matches(dto.getNewPassword(), member.getPassword())) {
-            System.out.println("❌ 새 비밀번호가 기존 비밀번호와 동일합니다.");
-            throw new IllegalArgumentException("새 비밀번호는 기존 비밀번호와 달라야 합니다.");
-        }
-
-        // 이름 변경 (입력 시만)
-        if (dto.getUsername() != null && !dto.getUsername().isBlank()) {
+        // 이름 변경 (비밀번호 없이 가능)
+        if (wantsToChangeName && !wantsToChangePassword) {
             member.setUsername(dto.getUsername());
-            System.out.println("이름 변경됨: " + dto.getUsername());
+            System.out.println("이름만 변경됨: " + dto.getUsername());
         }
 
-        // 비밀번호 변경
-        member.setPassword(passwordEncoder.encode(dto.getNewPassword()));
-        memberRepository.save(member);
+        // 비밀번호 변경 (현재 비밀번호 검증 필요)
+        if (wantsToChangePassword) {
+            // 현재 비밀번호 입력 여부 확인
+            if (dto.getCurrentPassword() == null || dto.getCurrentPassword().isBlank()) {
+                throw new IllegalArgumentException("비밀번호를 변경하려면 현재 비밀번호를 입력해야 합니다.");
+            }
 
+            // 현재 비밀번호 검증
+            if (!passwordEncoder.matches(dto.getCurrentPassword(), member.getPassword())) {
+                throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+            }
+
+            // 새 비밀번호가 기존 비밀번호와 동일한 경우
+            if (passwordEncoder.matches(dto.getNewPassword(), member.getPassword())) {
+                throw new IllegalArgumentException("새 비밀번호는 기존 비밀번호와 달라야 합니다.");
+            }
+
+            // 새 비밀번호 변경
+            member.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+            System.out.println("비밀번호 변경됨");
+
+            // 이름도 같이 변경하려는 경우
+            if (wantsToChangeName) {
+                member.setUsername(dto.getUsername());
+                System.out.println("이름도 함께 변경됨: " + dto.getUsername());
+            }
+        }
+
+        memberRepository.save(member);
         System.out.println("회원정보 수정 완료");
     }
 }
