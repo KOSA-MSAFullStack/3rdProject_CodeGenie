@@ -66,73 +66,8 @@
 
 
 <!-- --------------------------------------------------------------------------------------------------------------- -->
-<!--실제 구현 화면/기능-->
-## 실제 구현 화면/기능
-
-**[ 로그인 ]**
-
-<사진 추가>
-<br>
-
-- 로그인
-<br>
-
-
-**[ 회원가입 ]**
-
-<사진 추가>
-<br>
-
-- 회원가입
-<br>
-
-
-**[ AI 문제 생성 ]**
-
-<사진 추가>
-<br>
-
-- <설명>
-- <설명>
-<br>
-
-
-
-<!-- --------------------------------------------------------------------------------------------------------------- -->
-<!--컨벤션-->
-## 컨벤션
-
-- ### 코딩 컨벤션
-<img width="763" height="866" alt="image" src="https://github.com/user-attachments/assets/e6e07969-0fc0-43b0-afdf-570adf8ea05f" />
-
-- ### 깃 컨벤션
-<img width="736" height="804" alt="image" src="https://github.com/user-attachments/assets/6ff2652c-45ac-44d4-89f6-8f6b603aa35b" />
-<br>
-<br>
-
-
-
-<!-- --------------------------------------------------------------------------------------------------------------- -->
-<!--산출물-->
-## 산출물
-
-- ### Notion ([코드지니_알라딘 노션 바로가기](https://www.notion.so/27e83a6b63ea8184a6f2d8f6736c70fc?source=copy_link))
-
-- ### 기능 명세서
-<img width="1527" height="817" alt="image" src="https://github.com/user-attachments/assets/510247f2-a3be-47fd-be29-2c16510ab010" />
-
-- ### 시스템 아키텍처
-<사진 추가>
-
-- ### Wireframe (Figma)
-<img width="806" height="614" alt="image" src="https://github.com/user-attachments/assets/3aef1169-e575-4a62-be8a-13379b1e5e44" />
-
-- ### ERD (ERD Cloud)
-<img width="1292" height="402" alt="image" src="https://github.com/user-attachments/assets/3feb5ff2-45ca-4850-aab3-0d5b5b5db938" />
-
----
-
-## 🚀 개발 환경 설정 및 프로젝트 실행 가이드
+<!--프로젝트 실행 가이드-->
+## 🚀 Getting Started Guide
 
 이 프로젝트는 백엔드(Spring Boot), 프론트엔드(Vue), 그리고 채점 서버(Judge0)로 구성
 프로젝트 시작 개발자는 아래 가이드 따라 개발 환경 설정 및 실행 가능
@@ -165,3 +100,84 @@
 
 *   프론트엔드: `http://localhost:5173`
 *   문제 제출 기능 확인: `http://localhost:5173/workbooks/1`
+<br>
+
+
+
+<!-- --------------------------------------------------------------------------------------------------------------- -->
+<!--실제 구현 화면/기능-->
+## 실제 구현 화면/기능
+
+**[ 로그인 ]**
+
+<img width="600" alt="login" src="https://github.com/user-attachments/assets/e86c9ae1-b16b-4b90-8dd7-ebb8bc167d7a" />
+<br>
+
+- 로그인
+<br>
+
+
+**[ 회원가입 ]**
+
+<img width="600" alt="signup" src="https://github.com/user-attachments/assets/af34f278-3a9c-4d81-b8cf-143f9060bffd" />
+<br>
+
+- 회원가입
+<br>
+
+
+**[ 새 문제 생성 창 ]**
+
+<img width="600" alt="newquiz" src="https://github.com/user-attachments/assets/36d96143-f802-4bfe-9e4e-dd35da019c7b" />
+<br>
+
+- <설명>
+- <설명>
+<br>
+
+
+**[ 새 문제 생성 창 2 ]**
+
+<img width="304" height="429" alt="image" src="https://github.com/user-attachments/assets/07be91a5-7c28-498e-ac89-e337f941ecdd" />
+<br>
+
+- <설명>
+- <설명>
+<br>
+
+
+
+
+
+<!-- --------------------------------------------------------------------------------------------------------------- -->
+<!--컨벤션-->
+## 컨벤션
+
+- ### 코딩 컨벤션
+<img width="700" height="800" alt="image" src="https://github.com/user-attachments/assets/e6e07969-0fc0-43b0-afdf-570adf8ea05f" />
+
+- ### 깃 컨벤션
+<img width="700" height="800" alt="image" src="https://github.com/user-attachments/assets/6ff2652c-45ac-44d4-89f6-8f6b603aa35b" />
+<br>
+<br>
+
+
+
+<!-- --------------------------------------------------------------------------------------------------------------- -->
+<!--산출물-->
+## 산출물
+
+- ### Notion ([코드지니_알라딘 노션 바로가기](https://www.notion.so/27e83a6b63ea8184a6f2d8f6736c70fc?source=copy_link))
+<img width="900" height="900" alt="image" src="https://github.com/user-attachments/assets/341afbec-a2f3-445d-bd9c-9907422a1cad" />
+
+- ### 기능 명세서
+<img width="900" height="800" alt="image" src="https://github.com/user-attachments/assets/510247f2-a3be-47fd-be29-2c16510ab010" />
+
+- ### 시스템 아키텍처
+<img width="900" height="600" alt="image" src="https://github.com/user-attachments/assets/ff836c56-f9a5-4045-92bf-95879eea0b8b" />
+
+- ### Wireframe (Figma)
+<img width="900" height="600" alt="image" src="https://github.com/user-attachments/assets/3aef1169-e575-4a62-be8a-13379b1e5e44" />
+
+- ### ERD (ERD Cloud)
+<img width="900" height="600" alt="image" src="https://github.com/user-attachments/assets/c1ab6194-4480-4114-a182-72f09f646cbf" />
