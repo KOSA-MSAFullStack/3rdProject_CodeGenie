@@ -45,7 +45,7 @@ public class JWTUtil {
                 .get("email", String.class);
     }
 
-    // ✅ 만료 여부 확인 (예외 방지)
+    // 만료 여부 확인 (예외 방지)
     public Boolean isExpired(String token) {
         try {
             Date exp = Jwts.parser()
@@ -61,7 +61,7 @@ public class JWTUtil {
             return true;
         }
     }
-    // ✅ 토큰 검증 (서명 및 위조 확인)
+    // 토큰 검증 (서명 및 위조 확인)
     public boolean validateToken(String token) {
         try {
             Jwts.parser()

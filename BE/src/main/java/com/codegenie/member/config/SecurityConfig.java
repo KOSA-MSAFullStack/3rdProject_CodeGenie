@@ -37,7 +37,7 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 
-    // ✅ LoginFilter Bean 등록 (생성자 주입 방식 유지)
+    // LoginFilter Bean 등록 (생성자 주입 방식 유지)
     @Bean
     public LoginFilter loginFilter(AuthenticationManager authenticationManager,
                                    JWTUtil jwtUtil,
@@ -47,7 +47,7 @@ public class SecurityConfig {
         return filter;
     }
 
-    // ✅ JWTFilter Bean 등록
+    // JWTFilter Bean 등록
     @Bean
     public JWTFilter jwtFilter(JWTUtil jwtUtil,
                                CustomUserDetailsService userDetailsService,
@@ -67,14 +67,14 @@ public class SecurityConfig {
         http.formLogin(form -> form.disable());
         http.httpBasic(basic -> basic.disable());
 
-        // ✅ 인가 설정 (기존 + /error, OPTIONS 허용 추가)
+        // 인가 설정 (기존 + /error, OPTIONS 허용 추가)
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // 프리플라이트 허용
                 .requestMatchers("/", "/api/join", "/api/login", "/api/reissue", "/error").permitAll() // /error 허용 추가
                 .anyRequest().authenticated()
         );
 
-        // ✅ 예외 처리 명시 (401/403 구분)
+        // 예외 처리 명시 (401/403 구분)
         http.exceptionHandling(ex -> ex
                 .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)) // 인증 실패 → 401
                 .accessDeniedHandler(new AccessDeniedHandlerImpl()) // 권한 없음 → 403
